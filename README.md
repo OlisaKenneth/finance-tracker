@@ -24,13 +24,14 @@ Building a complete financial management application - starting from command-lin
 
 ## 📂 Project Structure
 
+```
 src/main/java/org/financetracker/
 ├── Transaction.java      # Income/expense transaction model
-├── Budget.java           # Category budget management
+├── Budget.java           # Category budget management  
 ├── SavingsGoal.java      # Long-term savings goal tracking
 ├── FinanceTracker.java   # Core application logic
 └── Main.java             # CLI entry point
-
+```
 ## 🚀 How to Run
 
 ```bash
