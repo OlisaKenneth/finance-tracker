@@ -1,5 +1,6 @@
 package org.financetracker;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class FinanceTracker {
     private SavingsGoal savingsGoal; //a field for our savings Goal
@@ -29,6 +30,7 @@ public class FinanceTracker {
     }
 
 //this is to add money to savedSoFar variable in the SavingsGoal.java
+
     public void addMoney(double value){
         if(savingsGoal!=null){
             savingsGoal.addSavings(value);
@@ -37,17 +39,16 @@ public class FinanceTracker {
         }
     }
 
-//this shows us how much we have saved so far
-    public String savingProgress(){
-        return savingsGoal.toString();
-    }
+////this shows us how much we have saved so far
+//    public String savingProgress(){
+//        return savingsGoal.toString();
+//    }
 
 //this is where we can search for the budget via its category
     public Budget searchForBudget(String category){
         for (int i=0; i<budgets.size(); i++){
             Budget b = budgets.get(i);
-            if (b.getCategory().equals(category)) {
-                System.out.printf("found at position %d",i);
+            if (b.getCategory().equalsIgnoreCase(category)) {
                 return b;
 
             }
@@ -75,7 +76,13 @@ public class FinanceTracker {
         else {
             System.out.println("==ALL BUDGETS==");
             for (Budget b : budgets) {
-                System.out.println(b);
+                if (b.getRemainder()<0){
+                    String t = String.format(b.getCategory() + ": $" + b.getSpent() + "/$" + b.getMonthlyLimit() +
+                            " (EXCEEDED BY: $" + b.getRemainder() + ")");
+                    System.out.println(t);
+                }else{
+                     System.out.println(b);}
+
             }
         }
     }
