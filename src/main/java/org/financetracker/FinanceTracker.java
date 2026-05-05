@@ -77,8 +77,9 @@ public class FinanceTracker {
             System.out.println("==ALL BUDGETS==");
             for (Budget b : budgets) {
                 if (b.getRemainder()<0){
+                    double exceeded = Math.abs(b.getRemainder());
                     String t = String.format(b.getCategory() + ": $" + b.getSpent() + "/$" + b.getMonthlyLimit() +
-                            " (EXCEEDED BY: $" + b.getRemainder() + ")");
+                            " (EXCEEDED BY: $" + exceeded + ")");
                     System.out.println(t);
                 }else{
                      System.out.println(b);}
