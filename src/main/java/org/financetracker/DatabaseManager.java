@@ -35,4 +35,38 @@ public class DatabaseManager {
         }
 
     }
+
+    public void createTables(){
+        var transactionTable = "CREATE TABLE IF NOT EXISTS transactions(" +
+                "   transaction_id INTEGER PRIMARY KEY," +
+                "   category TEXT," +
+                "   description TEXT," +
+                "   amount REAL," +
+                "   date TEXT" +
+                ");";
+
+        var budgetTable = "CREATE TABLE IF NOT EXISTS budgets(" +
+                "   budget_id INTEGER PRIMARY KEY," +
+                "   monthly_limit REAL," +
+                "   category TEXT," +
+                "   spent REAL" +
+                ");";
+
+        var savingsGoalTable = "CREATE TABLE IF NOT EXISTS savings_goal(" +
+                "   savings_id INTEGER PRIMARY KEY," +
+                "   goal_name TEXT," +
+                "   target_amount REAL," +
+                "   deadline INTEGER," +
+                "   saved_so_far REAL" +
+                ");";
+        try {
+            var stmt = connection.createStatement();
+            stmt.execute(transactionTable);
+            stmt.execute(budgetTable);
+            stmt.execute(savingsGoalTable);
+            System.out.println("Tables created successfully!" );
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+    }
 }
