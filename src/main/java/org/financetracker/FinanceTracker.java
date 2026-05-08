@@ -1,15 +1,19 @@
 package org.financetracker;
 import java.util.ArrayList;
+import java.util.Scanner;
+import java.time.LocalDate;
 import java.util.Locale;
 
 public class FinanceTracker {
     private SavingsGoal savingsGoal; //a field for our savings Goal
     private ArrayList<Budget> budgets;//a private field that is used to create an ever expanding list of budgets objects
+    private ArrayList<Transaction> transactions;
 
 
     public FinanceTracker(){ //constructor
         this.savingsGoal=null; //we initialize the savings goal to null because we have not made a goal yet
         this.budgets = new ArrayList<>();//this is how we initalize the budgets arrayList
+        this.transactions = new ArrayList<>();
     }
 
 
@@ -23,6 +27,7 @@ public class FinanceTracker {
     public void createBudget(String category,double monthlyLimit){
         budgets.add(new Budget(category, monthlyLimit));
     }
+
 
 //this is to give the user the savings Goal
     public SavingsGoal getSavingsGoal(){
@@ -39,10 +44,6 @@ public class FinanceTracker {
         }
     }
 
-////this shows us how much we have saved so far
-//    public String savingProgress(){
-//        return savingsGoal.toString();
-//    }
 
 //this is where we can search for the budget via its category
     public Budget searchForBudget(String category){
@@ -50,18 +51,23 @@ public class FinanceTracker {
             Budget b = budgets.get(i);
             if (b.getCategory().equalsIgnoreCase(category)) {
                 return b;
-
             }
         }
         return null;
     }
 
 //we have a method to add an expense after searching for the particular category
-    public void addExpense(String category, double value) {
+    public void addExpense(String category, double value, Scanner scanner) {
         Budget c = searchForBudget(category);
             if (c != null) {
                 c.addExpense(value);
                 System.out.println("Added $" + value + " to " + category);
+
+                System.out.print("what was the purchase for: ");
+                String description = scanner.nextLine();
+                LocalDate today = LocalDate.now();
+                transactions.add(new Transaction(value,category,description,today.toString()));
+
             }
             else{
                 System.out.println("no such budget exists for category: "+category);
@@ -88,7 +94,6 @@ public class FinanceTracker {
         }
     }
 
-
 //this is to see if we have exceeded budget
     public void exceededBudget(){
         for (Budget b: budgets){
@@ -96,6 +101,29 @@ public class FinanceTracker {
                 System.out.println("⚠️ You have exceeded budget for: " +b.getCategory());
             }
         }
+    }
+
+    public void showAllTransactions(){
+        if (transactions.isEmpty()){
+            System.out.println("Error: No Transactions Yet");
+        }else{
+            System.out.println("==ALL TRANSACTIONS==");
+            for (Transaction t: transactions){
+                System.out.println(t);
+            }
+        }
+    }
+
+
+    public void showMenu(){
+        System.out.println("=== Finance Tracker ===");
+        System.out.println("1. Add Expense");
+        System.out.println("2. View Budgets");
+        System.out.println("3. Check Budget Alerts");
+        System.out.println("4. Add Savings");
+        System.out.println("5. View Savings Progress");
+        System.out.println("6. Show All Transactions");
+        System.out.println("7. Exit");
     }
 
 }

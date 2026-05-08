@@ -5,8 +5,14 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
+        DatabaseManager db = new DatabaseManager();
+        db.connect();
+
+
         Scanner scanner = new Scanner(System.in);
         LocalDate today = LocalDate.now();//today = 2026-05-02
+        FinanceTracker tracker = new FinanceTracker();
+
 
 
         int month = today.getMonthValue();//get the month value
@@ -20,31 +26,74 @@ public class Main {
         int targetMonth = scanner.nextInt();
 
         int deadline = ((targetYear-year)*12)+(targetMonth-month);
-//        System.out.printf("time needed to save the amount: %d%n", deadline);
-
-
-
-
-        FinanceTracker tracker = new FinanceTracker();
         tracker.setSavingsGoal("Car", 8000, deadline);
         tracker.createBudget("Entertainment", 300);
         tracker.createBudget("Groceries", 150);
 
 
 
-        tracker.addMoney(500);
-        System.out.println("savings goal: "+ tracker.getSavingsGoal());
+//        int optionSelected;
+        boolean keepGoing= true;
+        while (keepGoing){
+            tracker.showMenu();
+            System.out.print("please select an option (1-7) > ");
+            int optionSelected = scanner.nextInt();
+
+            switch(optionSelected){
+                case(1):
+                    scanner.nextLine();
+                    System.out.print("what category: ");
+                    String category = scanner.nextLine();
+                    System.out.print("what amount did you spend: ");
+                    double value = scanner.nextDouble();
+                    scanner.nextLine();
+                    tracker.addExpense(category,value,scanner);
+                    System.out.println();
+                    break;
+
+                case(2):
+                    tracker.showStatus();
+                    System.out.println();
+                    break;
+
+                case(3):
+                    tracker.exceededBudget();
+                    System.out.println();
+                    break;
+
+                case(4):
+                    System.out.print("how much money do you want to add your savings: ");
+                    double amount = scanner.nextDouble();
+                    tracker.addMoney(amount);
+                    System.out.println();
+                    break;
+
+                case(5):
+                    System.out.println(tracker.getSavingsGoal());
+                    System.out.println();
+                    break;
+
+                case(6):
+                    tracker.showAllTransactions();
+                    System.out.println();
+                    break;
+
+                case(7):
+                    System.out.println("GOODBYE");
+                    keepGoing=false;
+                    System.out.println();
+                    break;
+
+                default:
+                    System.out.println("Invalid option! Try again.");
+                    break;
+
+            }
+
+        }
 
 
-        System.out.println(tracker.searchForBudget("Groceries"));
-        tracker.addExpense("Groceries", 100);
-        tracker.addExpense("Groceries", 50);   // Capital G
-        tracker.addExpense("groceries", 30);   // Lowercase g
-        tracker.addExpense("GROCERIES", 20);   // All caps
-        tracker.addExpense("GrOcErIeS", 10);   // Mixed case
 
-        tracker.showStatus();
-        tracker.exceededBudget();
     }
 }
 
