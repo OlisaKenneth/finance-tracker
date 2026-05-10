@@ -2,7 +2,7 @@ package org.financetracker;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.time.LocalDate;
-import java.util.Locale;
+
 
 public class FinanceTracker {
     private ArrayList<SavingsGoal> savingsGoals; //a field for our savings Goal

@@ -160,8 +160,7 @@ public class DatabaseManager {
         try(PreparedStatement pStmt= connection.prepareStatement(sql)){
             pStmt.setDouble(1, value);
             pStmt.setString(2, categoryy);
-            int rowsAffected = pStmt.executeUpdate();
-            System.out.println("DEBUG: updated " + rowsAffected + " rows for category: " + categoryy); // ← add this
+           pStmt.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
