@@ -52,24 +52,25 @@ public class DatabaseManager {
 
         var budgetTable = "CREATE TABLE IF NOT EXISTS budgets(" +
                 "   budget_id INTEGER PRIMARY KEY," +
-                "   category TEXT UNIQUE," +
+                "   category TEXT UNIQUE COLLATE NOCASE," +
                 "   monthly_limit REAL," +
                 "   spent REAL" +
                 ");";
 
         var savingsGoalTable = "CREATE TABLE IF NOT EXISTS savings_goal(" +
                 "   savings_id INTEGER PRIMARY KEY," +
-                "   goal_name TEXT," +
+                "   goal_name TEXT UNIQUE COLLATE NOCASE," +
                 "   target_amount REAL," +
                 "   deadline INTEGER," +
                 "   saved_so_far REAL" +
                 ");";
+
         try {
             var stmt = connection.createStatement();
             stmt.execute(transactionTable);
             stmt.execute(budgetTable);
             stmt.execute(savingsGoalTable);
-            System.out.println("Tables created successfully!" );
+            System.out.println("Tables created successfully!");
         }catch (SQLException e){
             System.out.println(e.getMessage());
         }
@@ -97,6 +98,19 @@ public class DatabaseManager {
             pstmt.setString(2, transaction.getDescription());
             pstmt.setDouble(3,transaction.getAmount());
             pstmt.setString(4,transaction.getDate());
+            pstmt.executeUpdate();
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void saveSavingsGoal(SavingsGoal savingsGoal){
+        var sql = "INSERT OR REPLACE INTO savings_goal(goal_name,target_amount,deadline,saved_so_far) VALUES(?,?,?,?)";
+        try(PreparedStatement pstmt = connection.prepareStatement(sql)){
+            pstmt.setString(1, savingsGoal.getGoalName());
+            pstmt.setDouble(2, savingsGoal.getTargetAmount());
+            pstmt.setInt(3, savingsGoal.getMonths());
+            pstmt.setDouble(4, savingsGoal.getSavedSoFar());
             pstmt.executeUpdate();
         }catch (SQLException e){
             System.out.println(e.getMessage());

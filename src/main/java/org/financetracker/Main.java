@@ -23,14 +23,6 @@ public class Main {
         int year = today.getYear();//get the year value
 
 
-        System.out.print("what is your year deadline(e.g., 2028): ");
-        int targetYear = scanner.nextInt();
-
-        System.out.print("what is your month deadline(e.g., (1-12) 04 for april): ");
-        int targetMonth = scanner.nextInt();
-
-        int deadline = ((targetYear-year)*12)+(targetMonth-month);
-        tracker.setSavingsGoal("Car", 8000, deadline);
 
 
 
@@ -92,13 +84,26 @@ public class Main {
                     break;
 
                 case(7):
-                    System.out.println("GOODBYE");
-                    keepGoing=false;
+                    scanner.nextLine();
+                    System.out.print("What are you saving for: ");
+                    String goalName = scanner.nextLine();
+                    System.out.print("What is your target amount: ");
+                    double targetAmount = scanner.nextDouble();
+                    System.out.print("What year do you want to reach this goal (e.g. 2028): ");
+                    int targetYear = scanner.nextInt();
+                    System.out.print("What month (1-12): ");
+                    int targetMonth = scanner.nextInt();
+                    int deadline = ((targetYear - year) * 12) + (targetMonth - month);
+                    tracker.setSavingsGoal(goalName, targetAmount, deadline);
+                    System.out.println("Savings goal set!");
+                    scanner.nextLine();
                     System.out.println();
                     break;
 
-                default:
-                    System.out.println("Invalid option! Try again.");
+                case(8):
+                    System.out.println("GOODBYE");
+                    keepGoing = false;
+                    System.out.println();
                     break;
 
             }

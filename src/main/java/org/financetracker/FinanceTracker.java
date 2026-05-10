@@ -23,6 +23,7 @@ public class FinanceTracker {
 //it should have a goalName, a target amount and a number of months you want to save
     public void setSavingsGoal(String goalName, double targetAmount, int months){
         savingsGoal = new SavingsGoal(goalName, targetAmount, months);
+        db.saveSavingsGoal(savingsGoal);
     }
 
 //initialize the budget by giving it, its category, and a monthly limit
@@ -146,7 +147,8 @@ public class FinanceTracker {
         System.out.println("4. Add Savings");
         System.out.println("5. View Savings Progress");
         System.out.println("6. Show All Transactions");
-        System.out.println("7. Exit");
+        System.out.println("7. Set Savings Goal");
+        System.out.println("8. Exit");
     }
 
 }
