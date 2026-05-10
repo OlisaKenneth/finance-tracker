@@ -8,12 +8,14 @@ public class FinanceTracker {
     private SavingsGoal savingsGoal; //a field for our savings Goal
     private ArrayList<Budget> budgets;//a private field that is used to create an ever expanding list of budgets objects
     private ArrayList<Transaction> transactions;
+    private DatabaseManager db;
 
 
-    public FinanceTracker(){ //constructor
+    public FinanceTracker(DatabaseManager db){ //constructor
         this.savingsGoal=null; //we initialize the savings goal to null because we have not made a goal yet
         this.budgets = new ArrayList<>();//this is how we initalize the budgets arrayList
         this.transactions = new ArrayList<>();
+        this.db=db;
     }
 
 
@@ -25,7 +27,13 @@ public class FinanceTracker {
 
 //initialize the budget by giving it, its category, and a monthly limit
     public void createBudget(String category,double monthlyLimit){
-        budgets.add(new Budget(category, monthlyLimit));
+        Budget newBudgets = new Budget(category, monthlyLimit);
+        if(searchForBudget(category)== null) {
+            budgets.add(newBudgets);
+            db.saveBudget(newBudgets);
+        }else {
+            System.out.println("A budget for " + category + " already exists!");
+        }
     }
 
 
@@ -36,7 +44,7 @@ public class FinanceTracker {
 
 //this is to add money to savedSoFar variable in the SavingsGoal.java
 
-    public void addMoney(double value){
+    public void addMoneyToSavings(double value){
         if(savingsGoal!=null){
             savingsGoal.addSavings(value);
         }else{
@@ -61,12 +69,16 @@ public class FinanceTracker {
         Budget c = searchForBudget(category);
             if (c != null) {
                 c.addExpense(value);
+                db.updateDbBudgetSpent(value, category);
+
                 System.out.println("Added $" + value + " to " + category);
 
                 System.out.print("what was the purchase for: ");
                 String description = scanner.nextLine();
                 LocalDate today = LocalDate.now();
-                transactions.add(new Transaction(value,category,description,today.toString()));
+                Transaction transaction = new Transaction(value,category,description,today.toString());
+                transactions.add(transaction);
+                db.saveTransaction(transaction);
 
             }
             else{
@@ -94,6 +106,14 @@ public class FinanceTracker {
         }
     }
 
+    public void loadBudgets(ArrayList<Budget> b){
+        this.budgets = b;
+    }
+
+    public void loadTransactions(ArrayList<Transaction> t){
+        this.transactions = t;
+    }
+
 //this is to see if we have exceeded budget
     public void exceededBudget(){
         for (Budget b: budgets){
@@ -115,8 +135,11 @@ public class FinanceTracker {
     }
 
 
+
+
     public void showMenu(){
         System.out.println("=== Finance Tracker ===");
+        System.out.println("0. Create New Budget");
         System.out.println("1. Add Expense");
         System.out.println("2. View Budgets");
         System.out.println("3. Check Budget Alerts");

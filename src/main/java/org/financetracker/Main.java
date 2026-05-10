@@ -12,7 +12,10 @@ public class Main {
 
         Scanner scanner = new Scanner(System.in);
         LocalDate today = LocalDate.now();//today = 2026-05-02
-        FinanceTracker tracker = new FinanceTracker();
+        FinanceTracker tracker = new FinanceTracker(db);
+        tracker.loadBudgets(db.loadBudgets());
+        tracker.loadTransactions(db.loadTransactions());
+
 
 
 
@@ -28,8 +31,7 @@ public class Main {
 
         int deadline = ((targetYear-year)*12)+(targetMonth-month);
         tracker.setSavingsGoal("Car", 8000, deadline);
-        tracker.createBudget("Entertainment", 300);
-        tracker.createBudget("Groceries", 150);
+
 
 
 
@@ -37,10 +39,20 @@ public class Main {
         boolean keepGoing= true;
         while (keepGoing){
             tracker.showMenu();
-            System.out.print("please select an option (1-7) > ");
+            System.out.print("please select an option (0-7) > ");
             int optionSelected = scanner.nextInt();
 
             switch(optionSelected){
+                case(0):
+                    scanner.nextLine();
+                    System.out.print("what category is this budget for(e.g entertainent, Groceries etc. : ");
+                    String budgetCategory = scanner.nextLine();
+                    System.out.print("what would be the monthly limit: ");
+                    double budgetValue = scanner.nextDouble();
+                    tracker.createBudget(budgetCategory,budgetValue);
+                    scanner.nextLine();
+                    System.out.println();
+                    break;
                 case(1):
                     scanner.nextLine();
                     System.out.print("what category: ");
@@ -65,7 +77,7 @@ public class Main {
                 case(4):
                     System.out.print("how much money do you want to add your savings: ");
                     double amount = scanner.nextDouble();
-                    tracker.addMoney(amount);
+                    tracker.addMoneyToSavings(amount);
                     System.out.println();
                     break;
 
