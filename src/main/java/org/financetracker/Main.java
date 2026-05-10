@@ -1,5 +1,6 @@
 package org.financetracker;
 import java.time.LocalDate;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 
@@ -15,6 +16,7 @@ public class Main {
         FinanceTracker tracker = new FinanceTracker(db);
         tracker.loadBudgets(db.loadBudgets());
         tracker.loadTransactions(db.loadTransactions());
+        tracker.loadSavingsGoals(db.loadSavingsGoals());
 
 
 
@@ -27,12 +29,19 @@ public class Main {
 
 
 
-//        int optionSelected;
+//
         boolean keepGoing= true;
         while (keepGoing){
             tracker.showMenu();
-            System.out.print("please select an option (0-7) > ");
-            int optionSelected = scanner.nextInt();
+            int optionSelected= -1 ;
+            System.out.print("please select an option (0-8) > ");
+            try {
+                optionSelected = scanner.nextInt();
+                // your switch statement here
+            } catch (InputMismatchException e) {
+                System.out.println("Invalid input! Please enter a number.");
+                scanner.nextLine(); // clear the bad input from buffer
+            }
 
             switch(optionSelected){
                 case(0):
@@ -67,14 +76,17 @@ public class Main {
                     break;
 
                 case(4):
-                    System.out.print("how much money do you want to add your savings: ");
+                    scanner.nextLine();
+                    System.out.print("Which savings goal: ");
+                    String savingsGoalName = scanner.nextLine();
+                    System.out.print("How much do you want to add: ");
                     double amount = scanner.nextDouble();
-                    tracker.addMoneyToSavings(amount);
+                    tracker.addMoneyToSavings(savingsGoalName, amount);
                     System.out.println();
                     break;
 
                 case(5):
-                    System.out.println(tracker.getSavingsGoal());
+                    tracker.showSavingsGoals();
                     System.out.println();
                     break;
 
@@ -95,7 +107,6 @@ public class Main {
                     int targetMonth = scanner.nextInt();
                     int deadline = ((targetYear - year) * 12) + (targetMonth - month);
                     tracker.setSavingsGoal(goalName, targetAmount, deadline);
-                    System.out.println("Savings goal set!");
                     scanner.nextLine();
                     System.out.println();
                     break;

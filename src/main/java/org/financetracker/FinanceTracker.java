@@ -5,14 +5,14 @@ import java.time.LocalDate;
 import java.util.Locale;
 
 public class FinanceTracker {
-    private SavingsGoal savingsGoal; //a field for our savings Goal
+    private ArrayList<SavingsGoal> savingsGoals; //a field for our savings Goal
     private ArrayList<Budget> budgets;//a private field that is used to create an ever expanding list of budgets objects
     private ArrayList<Transaction> transactions;
     private DatabaseManager db;
 
 
     public FinanceTracker(DatabaseManager db){ //constructor
-        this.savingsGoal=null; //we initialize the savings goal to null because we have not made a goal yet
+        this.savingsGoals = new ArrayList<>(); //we initialize the savings goal to null because we have not made a goal yet
         this.budgets = new ArrayList<>();//this is how we initalize the budgets arrayList
         this.transactions = new ArrayList<>();
         this.db=db;
@@ -22,9 +22,24 @@ public class FinanceTracker {
 //initialize the savings goal object
 //it should have a goalName, a target amount and a number of months you want to save
     public void setSavingsGoal(String goalName, double targetAmount, int months){
-        savingsGoal = new SavingsGoal(goalName, targetAmount, months);
-        db.saveSavingsGoal(savingsGoal);
+        if(targetAmount <= 0){
+            System.out.println("Target amount must be greater than $0!");
+            return;
+        }
+        if(months <= 0){
+            System.out.println("Deadline must be a future date!");
+            return;
+        }
+        if(searchForSavingsGoal(goalName) == null){
+            SavingsGoal goal = new SavingsGoal(goalName, targetAmount, months);
+            savingsGoals.add(goal);
+            db.saveSavingsGoal(goal);
+            System.out.println("Savings goal created!");
+        } else {
+            System.out.println("A savings goal for " + goalName + " already exists!");
+        }
     }
+
 
 //initialize the budget by giving it, its category, and a monthly limit
     public void createBudget(String category,double monthlyLimit){
@@ -39,17 +54,30 @@ public class FinanceTracker {
 
 
 //this is to give the user the savings Goal
-    public SavingsGoal getSavingsGoal(){
-        return savingsGoal;
+    public void showSavingsGoals(){
+        if(savingsGoals.isEmpty()){
+            System.out.println("No savings goals yet!");
+        } else {
+            System.out.println("==ALL SAVINGS GOALS==");
+            for(SavingsGoal s : savingsGoals){
+                System.out.println(s);
+            }
+        }
+    }
+
+    public void loadSavingsGoals(ArrayList<SavingsGoal> goals){
+        this.savingsGoals = goals;
     }
 
 //this is to add money to savedSoFar variable in the SavingsGoal.java
 
-    public void addMoneyToSavings(double value){
-        if(savingsGoal!=null){
-            savingsGoal.addSavings(value);
-        }else{
-            System.out.println("Error no object initialized yet");
+    public void addMoneyToSavings(String goalName, double value){
+        SavingsGoal goal = searchForSavingsGoal(goalName);
+        if(goal != null){
+            goal.addSavings(value);
+            db.updateSavingsGoal(goal);
+        } else {
+            System.out.println("No savings goal found for: " + goalName);
         }
     }
 
@@ -60,6 +88,15 @@ public class FinanceTracker {
             Budget b = budgets.get(i);
             if (b.getCategory().equalsIgnoreCase(category)) {
                 return b;
+            }
+        }
+        return null;
+    }
+
+    public SavingsGoal searchForSavingsGoal(String goalName){
+        for(SavingsGoal s : savingsGoals){
+            if(s.getGoalName().equalsIgnoreCase(goalName)){
+                return s;
             }
         }
         return null;
@@ -144,7 +181,7 @@ public class FinanceTracker {
         System.out.println("1. Add Expense");
         System.out.println("2. View Budgets");
         System.out.println("3. Check Budget Alerts");
-        System.out.println("4. Add Savings");
+        System.out.println("4. Add To Savings");
         System.out.println("5. View Savings Progress");
         System.out.println("6. Show All Transactions");
         System.out.println("7. Set Savings Goal");

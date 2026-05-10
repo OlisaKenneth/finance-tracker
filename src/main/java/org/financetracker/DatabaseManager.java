@@ -105,14 +105,14 @@ public class DatabaseManager {
     }
 
     public void saveSavingsGoal(SavingsGoal savingsGoal){
-        var sql = "INSERT OR REPLACE INTO savings_goal(goal_name,target_amount,deadline,saved_so_far) VALUES(?,?,?,?)";
+        var sql = "INSERT OR IGNORE INTO savings_goal(goal_name,target_amount,deadline,saved_so_far) VALUES(?,?,?,?)";
         try(PreparedStatement pstmt = connection.prepareStatement(sql)){
             pstmt.setString(1, savingsGoal.getGoalName());
             pstmt.setDouble(2, savingsGoal.getTargetAmount());
             pstmt.setInt(3, savingsGoal.getMonths());
             pstmt.setDouble(4, savingsGoal.getSavedSoFar());
             pstmt.executeUpdate();
-        }catch (SQLException e){
+        }catch(SQLException e){
             System.out.println(e.getMessage());
         }
     }
@@ -166,6 +166,37 @@ public class DatabaseManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void updateSavingsGoal(SavingsGoal savingsGoal){
+        var sql = "UPDATE savings_goal SET saved_so_far = ? WHERE UPPER(goal_name) = UPPER(?)";
+        try(PreparedStatement pstmt = connection.prepareStatement(sql)){
+            pstmt.setDouble(1, savingsGoal.getSavedSoFar());
+            pstmt.setString(2, savingsGoal.getGoalName());
+            pstmt.executeUpdate();
+        }catch(SQLException e){
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public ArrayList<SavingsGoal> loadSavingsGoals(){
+        var sql = "SELECT * FROM savings_goal";
+        ArrayList<SavingsGoal> goals = new ArrayList<>();
+        try(Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)){
+            while(rs.next()){
+                SavingsGoal s = new SavingsGoal(
+                        rs.getString("goal_name"),
+                        rs.getDouble("target_amount"),
+                        rs.getInt("deadline")
+                );
+                s.addSavings(rs.getDouble("saved_so_far"));
+                goals.add(s);
+            }
+        }catch(SQLException e){
+            System.out.println(e.getMessage());
+        }
+        return goals;
     }
 
 
