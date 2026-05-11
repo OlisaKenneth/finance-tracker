@@ -188,4 +188,34 @@ public class FinanceTracker {
         System.out.println("8. Exit");
     }
 
+    // Add this method for GUI expense adding
+    public void addExpenseGUI(String category, double value, String description) {
+        Budget c = searchForBudget(category);
+        if (c != null) {
+            c.addExpense(value);
+            db.updateDbBudgetSpent(c.getSpent(), category);
+            java.time.LocalDate today = java.time.LocalDate.now();
+            Transaction transaction = new Transaction(value, category, description, today.toString());
+            transactions.add(transaction);
+            db.saveTransaction(transaction);
+        } else {
+            System.out.println("No budget found for: " + category);
+        }
+    }
+
+    // Add getter for budgets
+    public java.util.ArrayList<Budget> getBudgets() {
+        return budgets;
+    }
+
+    // Add getter for transactions
+    public java.util.ArrayList<Transaction> getTransactions() {
+        return transactions;
+    }
+
+    // Add getter for savings goals
+    public java.util.ArrayList<SavingsGoal> getSavingsGoals() {
+        return savingsGoals;
+    }
+
 }

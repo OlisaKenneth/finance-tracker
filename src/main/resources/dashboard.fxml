@@ -1,17 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<VBox spacing="10" xmlns="http://javafx.com/javafx"
+<VBox spacing="15" xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="org.financetracker.DashboardController"
-      style="-fx-padding: 20;">
+      style="-fx-padding: 30; -fx-background-color: #1a1a2e;">
 
-    <Label text="Finance Tracker" style="-fx-font-size: 24;"/>
-    <Button text="Add Expense" fx:id="addExpenseBtn" onAction="#handleAddExpense"/>
-    <Button text="View Budgets" fx:id="viewBudgetsBtn" onAction="#handleViewBudgets"/>
-    <Button text="Add Savings" fx:id="addSavingsBtn" onAction="#handleAddSavings"/>
-    <Button text="View Goals" fx:id="viewGoalsBtn" onAction="#handleViewGoals"/>
-    <Button text="View Transactions" fx:id="viewTransactionsBtn" onAction="#handleViewTransactions"/>
+    <Label text="💰 Finance Tracker"
+           style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #e94560;"/>
+
+    <Label text="Budgets"
+           style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #eaeaea;"/>
+    <Button text="➕ Create Budget" fx:id="createBudgetBtn" onAction="#handleCreateBudget"
+            maxWidth="Infinity" style="-fx-background-color: #0f3460; -fx-text-fill: #eaeaea; -fx-font-size: 13; -fx-padding: 10;"/>
+    <Button text="📊 View Budgets" fx:id="viewBudgetsBtn" onAction="#handleViewBudgets"
+            maxWidth="Infinity" style="-fx-background-color: #0f3460; -fx-text-fill: #eaeaea; -fx-font-size: 13; -fx-padding: 10;"/>
+    <Button text="💸 Add Expense" fx:id="addExpenseBtn" onAction="#handleAddExpense"
+            maxWidth="Infinity" style="-fx-background-color: #e94560; -fx-text-fill: white; -fx-font-size: 13; -fx-padding: 10;"/>
+
+    <Label text="Savings"
+           style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #eaeaea;"/>
+    <Button text="🎯 Set Savings Goal" fx:id="savingsGoalBtn" onAction="#handleSetSavingsGoal"
+            maxWidth="Infinity" style="-fx-background-color: #0f3460; -fx-text-fill: #eaeaea; -fx-font-size: 13; -fx-padding: 10;"/>
+    <Button text="💰 Add To Savings" fx:id="addSavingsBtn" onAction="#handleAddSavings"
+            maxWidth="Infinity" style="-fx-background-color: #0f3460; -fx-text-fill: #eaeaea; -fx-font-size: 13; -fx-padding: 10;"/>
+    <Button text="📈 View Savings Goals" fx:id="viewGoalsBtn" onAction="#handleViewGoals"
+            maxWidth="Infinity" style="-fx-background-color: #0f3460; -fx-text-fill: #eaeaea; -fx-font-size: 13; -fx-padding: 10;"/>
+
+    <Label text="Transactions"
+           style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #eaeaea;"/>
+    <Button text="📋 View Transactions" fx:id="viewTransactionsBtn" onAction="#handleViewTransactions"
+            maxWidth="Infinity" style="-fx-background-color: #00b4d8; -fx-text-fill: #1a1a2e; -fx-font-size: 13; -fx-padding: 10;"/>
 </VBox>
