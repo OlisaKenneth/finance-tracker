@@ -53,16 +53,16 @@ mvn exec:java -Dexec.mainClass="org.financetracker.Main"
 ### Phase 1: Command-Line Foundation (Current)
 - [x] Core data models (Transaction, Budget, SavingsGoal)
 - [x] Basic expense and budget tracking
-- [ ] Transaction history with filtering
-- [ ] Data persistence (file storage)
-- [ ] CSV import for bank statements
-- [ ] Spending reports and analytics
+- [x] Transaction history with filtering
+- [x] Data persistence (file storage)
+- [x] CSV import for bank statements
+- [x] Spending reports and analytics
 
 ### Phase 2: Desktop Application
-- [ ] JavaFX GUI interface
-- [ ] Interactive charts and graphs
-- [ ] Visual budget progress bars
-- [ ] Notification system for alerts
+- [x] JavaFX GUI interface
+- [x] Interactive charts and graphs
+- [x] Visual budget progress bars
+- [x] Notification system for alerts
 
 ### Phase 3: Web Application
 - [ ] Spring Boot backend REST API
