@@ -1,13 +1,18 @@
 package org.financetracker;
 
 import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class MainApp extends Application {
-    public  void start(Stage stage){
+    @Override
+    public void start(Stage stage) throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/dashboard.fxml"));
+        Scene scene = new Scene(loader.load(), 1000, 1000);
         stage.setTitle("Finance Tracker");
+        stage.setScene(scene);
         stage.show();
-
     }
 
     public static void main(String[] args) {
