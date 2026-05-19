@@ -1,7 +1,8 @@
 package org.financetracker.financetracker_api;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import java.util.*;
 
 /*
  * This class is our REQUEST HANDLER (the front door of our API)
@@ -60,5 +61,56 @@ public class BudgetController {
     public Budget createBudget(@RequestBody Budget budget){
         // pass the category and limit to the service to handle the creation
         return budgetService.createBudget(budget.getCategory(), budget.getMonthlyLimit());
+    }
+
+
+
+    /*
+     * This method handles PUT requests to /api/budgets/{id}
+     * The {id} in the URL is the id of the budget to update
+     * Example: PUT localhost:8080/api/budgets/1
+     *
+     * @PathVariable means: take the {id} from the URL
+     * and use it as the id parameter in this method
+     *
+     * @RequestBody means: take the JSON from the request body
+     * and convert it to a Budget object
+     */
+    @PutMapping("/{id}") // handles PUT requests to /api/budgets/{id}
+    public ResponseEntity<Budget> updateBudget(
+            @PathVariable Long id,        // grabs the id from the URL
+            @RequestBody Budget budget) { // grabs the new data from the request body
+
+        // ask the service to update the budget
+        Optional<Budget> updated = budgetService.updateBudget(
+                id,
+                budget.getCategory(),
+                budget.getMonthlyLimit()
+        );
+
+        // if the budget was found and updated, return it with status 200 OK
+        // if not found, return status 404 NOT FOUND
+        return updated.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /*
+     * This method handles DELETE requests to /api/budgets/{id}
+     * Example: DELETE localhost:8080/api/budgets/1
+     *
+     * Returns 200 OK if deleted successfully
+     * Returns 404 NOT FOUND if no budget with that id exists
+     */
+    @DeleteMapping("/{id}") // handles DELETE requests to /api/budgets/{id}
+    public ResponseEntity<Void> deleteBudget(@PathVariable Long id) {
+        // ask the service to delete the budget
+        boolean deleted = budgetService.deleteBudget(id);
+
+        // if deleted successfully return 200 OK
+        // if not found return 404 NOT FOUND
+        if (deleted) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }

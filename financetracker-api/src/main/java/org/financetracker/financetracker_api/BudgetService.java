@@ -2,6 +2,7 @@ package org.financetracker.financetracker_api;
 
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 
 /*
  * This class is our BUDGET LOGIC HANDLER
@@ -55,4 +56,48 @@ public class BudgetService {
         budget.setSpent(0); // step 3: nothing spent yet
         return budgetRepository.save(budget); // step 4: save to DB and return
     }
+
+    /*
+     * This method updates an existing budget
+     * Steps:
+     * 1. Find the budget with the given id
+     * 2. If it exists, update its fields
+     * 3. Save the updated budget back to the database
+     * 4. Return the updated budget
+     *
+     * The "?" after Budget means this might return
+     * nothing if the budget doesn't exist
+     */
+    public Optional<Budget> updateBudget(Long id, String category, double monthlyLimit) {
+        // step 1: find the budget by id
+        // findById returns Optional — it might be empty if id doesn't exist
+        Optional<Budget> existing = budgetRepository.findById(id);
+
+        // step 2: if a budget with that id exists, update it
+        if (existing.isPresent()) {
+            Budget budget = existing.get(); // get the actual budget object
+            budget.setCategory(category);        // update the category
+            budget.setMonthlyLimit(monthlyLimit); // update the limit
+            budgetRepository.save(budget);        // save changes to database
+            return Optional.of(budget);           // return the updated budget
+        }
+
+        // step 3: if no budget found with that id, return empty
+        return Optional.empty();
+    }
+
+    /*
+     * This method deletes a budget from the database
+     * It finds the budget by id and removes it permanently
+     * Returns true if deleted successfully, false if not found
+     */
+    public boolean deleteBudget(Long id) {
+        // check if the budget exists first
+        if (budgetRepository.existsById(id)) {
+            budgetRepository.deleteById(id); // delete it from database
+            return true; // deleted successfully
+        }
+        return false; // budget with that id was not found
+    }
+
 }
