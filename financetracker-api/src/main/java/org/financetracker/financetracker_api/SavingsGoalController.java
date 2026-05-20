@@ -1,5 +1,6 @@
 package org.financetracker.financetracker_api;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
@@ -32,8 +33,7 @@ public class SavingsGoalController {
 
     /*
      * This method handles GET requests to /api/savings_goal
-     * When someone visits localhost:8080/api/savings_goal
-     * this method runs and returns ALL savings goals as a JSON list
+     * Returns ALL savings goals as a JSON list
      *
      * Example response:
      * [{"id":1,"goalName":"Car","targetAmount":8000.0,"savedSoFar":500.0,"months":24}]
@@ -45,18 +45,22 @@ public class SavingsGoalController {
 
     /*
      * This method handles POST requests to /api/savings_goal
-     * When someone sends a new savings goal via Postman or a form
-     * this method receives it, saves it and returns the saved goal
+     * Receives a new savings goal, validates it, saves it and returns it
+     *
+     * @Valid runs the validation rules from SavingsGoal.java
+     * (@NotBlank on goalName, @Positive on targetAmount and months)
+     * BEFORE this method runs — if validation fails returns 400 Bad Request
      *
      * Example request body:
      * {"goalName": "Car", "targetAmount": 8000.0, "months": 24}
      *
      * Example response:
-     * {"id": 1, "goalName": "Car", "targetAmount": 8000.0, "savedSoFar": 0.0, "months": 24}
+     * {"id":1,"goalName":"Car","targetAmount":8000.0,"savedSoFar":0.0,"months":24}
      */
     @PostMapping // handles POST requests — used for CREATING data
-    public SavingsGoal createSavingsGoal(@RequestBody SavingsGoal savingsGoal){
-        // pass the goal details to the service to handle the creation
+    public SavingsGoal createSavingsGoal(@Valid @RequestBody SavingsGoal savingsGoal){
+        // @Valid validates before this line runs
+        // if goalName is blank or targetAmount is negative → rejected before reaching here
         return savingsGoalService.createGoal(
                 savingsGoal.getGoalName(),
                 savingsGoal.getTargetAmount(),
@@ -66,7 +70,7 @@ public class SavingsGoalController {
 
     /*
      * This method handles PUT requests to /api/savings_goal/{goalName}/add
-     * It adds money to an existing savings goal
+     * Adds money to an existing savings goal
      *
      * @PathVariable grabs goalName from the URL path:
      * /api/savings_goal/Car/add → goalName = "Car"

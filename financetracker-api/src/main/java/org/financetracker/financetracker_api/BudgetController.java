@@ -1,8 +1,10 @@
 package org.financetracker.financetracker_api;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 /*
  * This class is our REQUEST HANDLER (the front door of our API)
@@ -46,7 +48,12 @@ public class BudgetController {
     /*
      * This method handles POST requests to /api/budgets
      * When someone sends a new budget via Postman or a form
-     * this method receives it, saves it and returns the saved budget
+     * this method receives it, validates it, saves it and returns the saved budget
+     *
+     * @Valid tells Spring Boot to run the validation rules
+     * defined in Budget.java (@NotBlank, @Positive) BEFORE
+     * this method runs — if validation fails it returns 400 Bad Request
+     * automatically with the error message we defined
      *
      * @RequestBody means: take the JSON from the request body
      * and convert it into a Budget object automatically (Jackson does this)
@@ -58,12 +65,11 @@ public class BudgetController {
      * {"id": 1, "category": "Groceries", "monthlyLimit": 500.0, "spent": 0.0}
      */
     @PostMapping // handles POST requests — used for CREATING data
-    public Budget createBudget(@RequestBody Budget budget){
-        // pass the category and limit to the service to handle the creation
+    public Budget createBudget(@Valid @RequestBody Budget budget){
+        // @Valid runs the validation rules before this line executes
+        // if category is blank or monthlyLimit is negative → rejected before reaching here
         return budgetService.createBudget(budget.getCategory(), budget.getMonthlyLimit());
     }
-
-
 
     /*
      * This method handles PUT requests to /api/budgets/{id}
@@ -73,13 +79,12 @@ public class BudgetController {
      * @PathVariable means: take the {id} from the URL
      * and use it as the id parameter in this method
      *
-     * @RequestBody means: take the JSON from the request body
-     * and convert it to a Budget object
+     * @Valid runs validation rules on the incoming budget data
      */
     @PutMapping("/{id}") // handles PUT requests to /api/budgets/{id}
     public ResponseEntity<Budget> updateBudget(
-            @PathVariable Long id,        // grabs the id from the URL
-            @RequestBody Budget budget) { // grabs the new data from the request body
+            @PathVariable Long id,              // grabs the id from the URL
+            @Valid @RequestBody Budget budget){ // grabs and validates the new data
 
         // ask the service to update the budget
         Optional<Budget> updated = budgetService.updateBudget(
@@ -88,8 +93,8 @@ public class BudgetController {
                 budget.getMonthlyLimit()
         );
 
-        // if the budget was found and updated, return it with status 200 OK
-        // if not found, return status 404 NOT FOUND
+        // if the budget was found and updated return it with 200 OK
+        // if not found return 404 NOT FOUND
         return updated.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -102,13 +107,13 @@ public class BudgetController {
      * Returns 404 NOT FOUND if no budget with that id exists
      */
     @DeleteMapping("/{id}") // handles DELETE requests to /api/budgets/{id}
-    public ResponseEntity<Void> deleteBudget(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteBudget(@PathVariable Long id){
         // ask the service to delete the budget
         boolean deleted = budgetService.deleteBudget(id);
 
         // if deleted successfully return 200 OK
         // if not found return 404 NOT FOUND
-        if (deleted) {
+        if(deleted){
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();

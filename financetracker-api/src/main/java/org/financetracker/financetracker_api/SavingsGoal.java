@@ -1,5 +1,6 @@
 package org.financetracker.financetracker_api;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 
 // This class represents a Savings Goal
 // Think of it like a blueprint for what a savings goal looks like
@@ -12,13 +13,33 @@ public class SavingsGoal {
     @GeneratedValue(strategy = GenerationType.IDENTITY) // database automatically assigns the next number (1, 2, 3...)
     private Long id;
 
-    private String goalName;    // what you are saving for e.g. "Car"
-    private double targetAmount; // the total amount you want to save e.g. 8000.0
-    private double savedSoFar;  // how much you have saved so far e.g. 500.0
-    private int months;         // how many months you are giving yourself to save e.g. 24
+    // goalName cannot be empty — what are you saving for?
+    @NotBlank(message = "Goal name cannot be empty")
+    private String goalName;
+
+    /*
+     * @Positive means must be greater than 0
+     * blocks: -8000, 0
+     * allows: 0.01, 8000, 50000
+     */
+    @Positive(message = "Target amount must be greater than 0")
+    private double targetAmount;
+
+    // savedSoFar is not validated here because:
+    // - the user never sends savedSoFar directly
+    // - it is always set to 0 when a goal is created
+    // - it gets updated internally via addSavings
+    private double savedSoFar;
+
+    /*
+     * @Positive means must be greater than 0
+     * blocks: -12, 0
+     * allows: 1, 6, 24
+     */
+    @Positive(message = "Months must be greater than 0")
+    private int months;
 
     // SETTERS — these methods let you PUT values into the fields
-    // like filling in a form
 
     // sets the id of this savings goal
     public void setId(Long id) {
@@ -46,7 +67,6 @@ public class SavingsGoal {
     }
 
     // GETTERS — these methods let you GET values out of the fields
-    // like reading what is written on the form
 
     // returns the id of this savings goal
     public Long getId() {

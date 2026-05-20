@@ -1,6 +1,7 @@
 package org.financetracker.financetracker_api;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 
 // This class represents a Budget
 // Think of it like a blueprint for what a budget looks like
@@ -13,9 +14,31 @@ public class Budget {
     @GeneratedValue(strategy = GenerationType.IDENTITY) // database automatically assigns the next number (1, 2, 3...)
     private Long id;
 
-    private String category;     // what the budget is for e.g. "Groceries"
-    private double monthlyLimit; // the maximum amount you can spend e.g. 500.0
-    private double spent;        // how much you have already spent e.g. 100.0
+    /*
+     * @NotBlank means:
+     * - cannot be null (nothing sent at all)
+     * - cannot be empty "" (empty string)
+     * - cannot be just spaces "   "
+     * message = what the user sees if they break this rule
+     */
+    @NotBlank(message = "Category cannot be empty")
+    private String category;
+
+    /*
+     * @Positive means:
+     * - must be greater than 0
+     * - blocks: -500, 0
+     * - allows: 0.01, 100, 500.50
+     * message = what the user sees if they break this rule
+     */
+    @Positive(message = "Monthly limit must be greater than 0")
+    private double monthlyLimit;
+
+    // spent is not validated here because:
+    // - the user never sends spent directly
+    // - it is always set to 0 when a budget is created
+    // - it gets updated internally when expenses are added
+    private double spent;
 
     // SETTERS — these methods let you PUT values into the fields
     // like filling in a form
@@ -41,7 +64,7 @@ public class Budget {
     }
 
     // GETTERS — these methods let you GET values out of the fields
-    // like reading what's written on the form
+    // like reading what is written on the form
 
     // returns the id of this budget
     public Long getId() {
