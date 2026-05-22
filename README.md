@@ -1,99 +1,162 @@
-# Personal Finance Tracker 💰
+# Finance Tracker API 💰
 
-A Java-based finance management system to track budgets, monitor expenses, and achieve savings goals.
+A RESTful API for personal finance management — track budgets, log expenses, and work toward savings goals.
 
-## 🎯 Project Goal
+Built with Java and Spring Boot, deployed on Railway with PostgreSQL.
 
-Building a complete financial management application - starting from command-line, evolving to desktop GUI, and ultimately deploying as a web application. Currently helping me save **$8,000 for my first car!**
-
-## ✨ Current Features
-
-- **Savings Goal Tracking**: Set long-term goals with automatic monthly target calculation based on deadline
-- **Budget Management**: Create and monitor spending budgets for different categories
-- **Expense Tracking**: Record and categorize transactions
-- **Over-Budget Alerts**: Real-time warnings when spending exceeds limits
-- **Progress Monitoring**: Track percentage completion toward financial goals
-
-## 🛠️ Technologies
-
-- Java 24
-- Maven
-- Object-Oriented Programming (Encapsulation, Inheritance, Polymorphism)
-- Collections Framework (ArrayList)
-- Date/Time API (LocalDate)
-
-## 📂 Project Structure
+## 🌐 Live API
 
 ```
-src/main/java/org/financetracker/
-├── Transaction.java      # Income/expense transaction model
-├── Budget.java           # Category budget management  
-├── SavingsGoal.java      # Long-term savings goal tracking
-├── FinanceTracker.java   # Core application logic
-└── Main.java             # CLI entry point
+https://finance-tracker-production-1547.up.railway.app
 ```
-## 🚀 How to Run
+
+## 🛠️ Tech Stack
+
+- **Java 21**
+- **Spring Boot 3.5**
+- **Spring Data JPA / Hibernate**
+- **PostgreSQL** (production)
+- **SQLite** (local development)
+- **Maven**
+- **Railway** (deployment)
+
+## 📡 API Endpoints
+
+### Budgets
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/budgets | Get all budgets |
+| POST | /api/budgets | Create a new budget |
+| PUT | /api/budgets/{id} | Update a budget |
+| DELETE | /api/budgets/{id} | Delete a budget |
+
+### Transactions
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/transactions | Get all transactions |
+| POST | /api/transactions | Record a new transaction |
+
+### Savings Goals
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/savings_goal | Get all savings goals |
+| POST | /api/savings_goal | Create a savings goal |
+| PUT | /api/savings_goal/{goalName}/add?value=X | Add money to a goal |
+
+## 📋 Example Requests
+
+**Create a budget:**
+```json
+POST /api/budgets
+{
+    "category": "Groceries",
+    "monthlyLimit": 500.0
+}
+```
+
+**Record a transaction:**
+```json
+POST /api/transactions
+{
+    "amount": 50.0,
+    "category": "Groceries",
+    "description": "Weekly groceries"
+}
+```
+
+**Create a savings goal:**
+```json
+POST /api/savings_goal
+{
+    "goalName": "Car",
+    "targetAmount": 8000.0,
+    "months": 24
+}
+```
+
+**Add money to savings:**
+```
+PUT /api/savings_goal/Car/add?value=500
+```
+
+## ✅ Validation
+
+All endpoints validate input and return clear error messages:
+
+```json
+{
+    "errors": [
+        "Category cannot be empty",
+        "Monthly limit must be greater than 0"
+    ]
+}
+```
+
+## 🏗️ Architecture
+
+```
+Controller → Service → Repository → PostgreSQL
+```
+
+- **Controller** — handles HTTP requests and responses
+- **Service** — contains business logic
+- **Repository** — talks to the database via JPA
+- **GlobalExceptionHandler** — handles all errors cleanly
+
+## 🚀 Run Locally
 
 ```bash
-# Clone the repository
+# Clone the repo
 git clone https://github.com/OlisaKenneth/finance-tracker.git
 
-# Navigate to project
-cd finance-tracker
+# Navigate to the API folder
+cd finance-tracker/financetracker-api
 
-# Open in IntelliJ IDEA or compile with Maven
-mvn clean compile
-
-# Run the application
-mvn exec:java -Dexec.mainClass="org.financetracker.Main"
+# Run with Maven
+mvn spring-boot:run
 ```
 
-## 📊 Development Roadmap
+App runs on `http://localhost:8080`
 
-### Phase 1: Command-Line Foundation (Current)
-- [x] Core data models (Transaction, Budget, SavingsGoal)
-- [x] Basic expense and budget tracking
-- [x] Transaction history with filtering
-- [x] Data persistence (file storage)
-- [x] CSV import for bank statements
-- [x] Spending reports and analytics
+> Locally uses SQLite. No database setup needed.
 
-### Phase 2: Desktop Application
-- [x] JavaFX GUI interface
-- [x] Interactive charts and graphs
-- [x] Visual budget progress bars
-- [x] Notification system for alerts
+## 📦 Project Structure
 
-### Phase 3: Web Application
-- [ ] Spring Boot backend REST API
-- [ ] React/Vue.js frontend
-- [ ] Database integration (PostgreSQL)
-- [ ] User authentication
-- [ ] Cloud deployment (AWS/Heroku)
+```
+finance-tracker/
+├── src/                          # Phase 1: CLI app (Java)
+└── financetracker-api/           # Phase 3: Spring Boot REST API
+    └── src/main/java/
+        └── org/financetracker/financetracker_api/
+            ├── Budget.java
+            ├── BudgetController.java
+            ├── BudgetService.java
+            ├── BudgetRepository.java
+            ├── Transaction.java
+            ├── TransactionController.java
+            ├── TransactionService.java
+            ├── TransactionRepository.java
+            ├── SavingsGoal.java
+            ├── SavingsGoalController.java
+            ├── SavingsGoalService.java
+            ├── SavingsGoalRepository.java
+            └── GlobalExceptionHandler.java
+```
 
-## 💡 What I'm Learning
+## 🗺️ Roadmap
 
-- **OOP Design**: Creating clean, modular class structures with proper encapsulation
-- **Data Structures**: Working with ArrayList for dynamic collections
-- **Input Validation**: Handling edge cases and preventing null pointer exceptions
-- **Date/Time Logic**: Calculating time spans and deadlines programmatically
-- **Git Workflow**: Version control and professional commit practices
-- **Software Evolution**: Building with scalability in mind from the start
+- [x] Phase 1: Command-line Java app
+- [x] Phase 2: JavaFX desktop GUI
+- [x] Phase 3: Spring Boot REST API (deployed ✅)
+- [ ] Phase 4: React frontend
+- [ ] Phase 5: User authentication (JWT)
+- [ ] Phase 6: E-Commerce API
 
-## 🎓 Future Enhancements
+## 👨🏾‍💻 Author
 
-- Machine learning for spending pattern analysis
-- Budget recommendations based on historical data
-- Multi-currency support
-- Financial goal prioritization system
-- Export to PDF reports
-
-## 📝 License
-
-MIT License - Open for learning and collaboration
+**Kenneth Olisa** — Junior Backend Developer
+Building job-ready Java skills one project at a time.
 
 ---
 
-**Status**: 🚧 Active Development | **Started**: May 2026
-
-*Building this project to develop job-ready Java skills while solving a real personal finance challenge.*
+*Status: 🟢 Live | Started: May 2026*
