@@ -1,6 +1,7 @@
 package org.financetracker.financetracker_api;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaRepository;//A powerful tool that gives you instant database actions
+                                                    // (like save, delete, and find) without writing any database code.
 import java.util.*;
 
 /*

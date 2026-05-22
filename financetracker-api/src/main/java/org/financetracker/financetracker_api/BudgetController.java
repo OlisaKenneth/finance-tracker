@@ -1,10 +1,12 @@
 package org.financetracker.financetracker_api;
 
-import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.Optional;
+import jakarta.validation.Valid;//<- Tells Spring to automatically trigger a validation check on an incoming object.
+import org.springframework.http.ResponseEntity;//<-A container that holds the data you want to send back to a user,
+                                                        // along with web status codes (like 200 OK or 404 Not Found).
+import org.springframework.web.bind.annotation.*;//imports web controls. For example, @RestController makes your class
+                                   // handle web requests, and @GetMapping maps a specific web address to a Java method.
+import java.util.List;//<-An ordered list of items (like a list of users).
+import java.util.Optional;//<-A safety container used when a piece of data might be missing, helping prevent app crashes.
 
 /*
  * This class is our REQUEST HANDLER (the front door of our API)
