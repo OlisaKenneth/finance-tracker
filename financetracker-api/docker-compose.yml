@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+
+  # Your Spring Boot API
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # These tell Spring Boot to use the local PostgreSQL container
+      DATABASE_URL: jdbc:postgresql://db:5432/financetracker
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+
+  # Local PostgreSQL database
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: financetracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      # Saves database data between docker restarts
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
