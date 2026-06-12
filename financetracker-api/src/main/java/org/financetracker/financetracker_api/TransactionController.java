@@ -66,4 +66,13 @@ public class TransactionController {
                 transaction.getDescription()
         );
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
+        boolean deleted = transactionService.deleteTransaction(id);
+        if (deleted) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

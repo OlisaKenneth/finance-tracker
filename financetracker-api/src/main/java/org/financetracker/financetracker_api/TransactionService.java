@@ -38,4 +38,12 @@ public class TransactionService {
 
         return transaction;
     }
+
+    public boolean deleteTransaction(Long id) {
+        if (transactionRepository.existsById(id)) {
+            transactionRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
 }
