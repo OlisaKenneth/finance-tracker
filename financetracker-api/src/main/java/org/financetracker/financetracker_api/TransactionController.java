@@ -3,6 +3,7 @@ package org.financetracker.financetracker_api;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
+import org.springframework.http.ResponseEntity;
 
 /*
  * This class is our REQUEST HANDLER for transactions (the front door of the transactions API)
