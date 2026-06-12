@@ -7,9 +7,12 @@ import java.time.LocalDate;
 @Service
 public class TransactionService {
     private TransactionRepository transactionRepository;
+    private BudgetRepository budgetRepository; // ← add this
 
-    public TransactionService(TransactionRepository transactionRepository){
+    public TransactionService(TransactionRepository transactionRepository,
+                              BudgetRepository budgetRepository) { // ← add this
         this.transactionRepository = transactionRepository;
+        this.budgetRepository = budgetRepository; // ← add this
     }
 
     public List<Transaction> getAllTransaction(){
@@ -23,10 +26,16 @@ public class TransactionService {
         transaction.setCategory(category);
         transaction.setDescription(description);
         transaction.setDate(today.toString());
+        transactionRepository.save(transaction);
 
-        return transactionRepository.save(transaction);
+        // find the matching budget and update spent
+        Optional<Budget> budget = budgetRepository.findByCategory(category);
+        if (budget.isPresent()) {
+            Budget b = budget.get();
+            b.setSpent(b.getSpent() + amount); // ← add the amount to spent
+            budgetRepository.save(b);           // ← save back to DB
+        }
+
+        return transaction;
     }
-
-
-
 }
