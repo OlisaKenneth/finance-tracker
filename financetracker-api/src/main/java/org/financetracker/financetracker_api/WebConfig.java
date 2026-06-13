@@ -5,13 +5,15 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer{
+public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // which endpoints to cover
-                .allowedOrigins("http://localhost:5173") // who is allowed in
+        registry.addMapping("/**")
+                .allowedOrigins(
+                        "http://localhost:5173",
+                        "https://finance-tracker-frontend-six-rho.vercel.app"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE");
     }
-
 }
