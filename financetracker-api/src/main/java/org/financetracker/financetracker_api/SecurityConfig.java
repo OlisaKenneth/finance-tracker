@@ -1,40 +1,47 @@
 package org.financetracker.financetracker_api;
 
-import org.springframework.context.annotation.Bean; //<- Tells Spring "create one object from this method and keep it available app-wide"
-import org.springframework.context.annotation.Configuration; //<- Marks this class as a settings/config class, not a regular class
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; //<- The actual tool that scrambles (hashes) passwords securely
-import org.springframework.security.crypto.password.PasswordEncoder; //<- The general "type" of tool BCryptPasswordEncoder belongs to
+import org.springframework.context.annotation.Bean; //<- lets us create a reusable object Spring manages
+import org.springframework.context.annotation.Configuration; //<- marks this as a settings/config class
+import org.springframework.security.config.annotation.web.builders.HttpSecurity; //<- lets us configure which URLs need login
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity; //<- turns on custom security rules
+import org.springframework.security.config.http.SessionCreationPolicy; //<- controls how Spring Security tracks logged in users
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain; //<- the actual list of security rules for incoming requests
 
-/*
- * This class is our SECURITY SETTINGS file
- * It doesn't contain business logic — it just creates tools
- * that other classes (like a future UserService) can use
- *
- * Think of it like a toolbox:
- * This class puts ONE tool inside the toolbox (the password scrambler)
- * Any other class can reach into the toolbox and grab it
- */
-@Configuration // tells Spring Boot "this class sets up configuration, scan it on startup"
+@Configuration
+@EnableWebSecurity // tells Spring Boot "use MY custom security rules, not the default locked-down behavior"
 public class SecurityConfig {
 
-    /*
-     * This method creates ONE PasswordEncoder tool
-     * and Spring keeps it ready to hand out to any class that asks for it
-     *
-     * @Bean means: "run this method once, keep the result,
-     * and give it to whoever needs a PasswordEncoder"
-     *
-     * BCryptPasswordEncoder is the specific tool we chose
-     * It takes a plain password like "hello123"
-     * and turns it into a scrambled, one-way hash like:
-     * "$2a$10$N9qo8uLOickgx2ZMRZoMy..."
-     *
-     * One-way means: you can SCRAMBLE a password
-     * but you can NEVER unscramble it back to the original
-     * You can only CHECK if a typed password matches the hash
-     */
-    @Bean // tells Spring "create this object once, share it everywhere it's needed"
+    @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // creates the actual password-scrambling tool
+        return new BCryptPasswordEncoder();
+    }
+
+    /*
+     * This method defines WHICH URLs require login and WHICH don't
+     *
+     * Right now:
+     * - /api/auth/** (register, login) → open to everyone, no login needed
+     * - everything else → still open for now (we'll lock it down later
+     *   once login actually works and the frontend can send tokens)
+     *
+     * We're doing this in stages so nothing breaks while we build
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // disables a browser-form protection we don't need for a REST API
+                .sessionManagement(session ->
+                                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        // STATELESS means: don't remember who's logged in using cookies/sessions
+                        // we'll use tokens (JWT) instead, added in a later step
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll() // anyone can register/login without being logged in
+                        .anyRequest().permitAll() // TEMPORARY: everything else still open until JWT is wired in
+                );
+
+        return http.build();
     }
 }
