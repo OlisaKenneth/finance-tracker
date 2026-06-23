@@ -52,4 +52,20 @@ public class UserController {
                 user.getRole()
         );
     }
+
+    /*
+     * This method handles POST requests to /api/auth/login
+     * Receives email and password, checks if they're correct,
+     * and returns a JWT token if successful
+     *
+     * Example request body:
+     * {"email": "kenneth@example.com", "password": "hello123"}
+     *
+     * Example response:
+     * "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrZW5uZXRoQGV4YW1wbGUuY29tIn0.4f8x..."
+     */
+    @PostMapping("/login")
+    public String login(@RequestBody User loginRequest) {
+        return userService.login(loginRequest.getEmail(), loginRequest.getPassword());
+    }
 }

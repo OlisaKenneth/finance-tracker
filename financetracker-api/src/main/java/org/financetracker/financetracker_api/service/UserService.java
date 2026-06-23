@@ -3,6 +3,7 @@ import org.financetracker.financetracker_api.model.User;
 import org.financetracker.financetracker_api.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.financetracker.financetracker_api.service.JwtService;
 
 import java.util.Optional;
 
@@ -11,10 +12,12 @@ public class UserService {
 
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
+    private JwtService jwtService;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder){
         this.userRepository = userRepository;
         this.passwordEncoder=passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     public User register(String name, String email, String password, String role){
@@ -32,6 +35,35 @@ public class UserService {
         newUser.setRole(role);
 
         return userRepository.save(newUser);
+    }
+
+    /*
+     * This method handles LOGIN
+     * Steps:
+     * 1. Find the user by email — if not found, reject
+     * 2. Check if the typed password matches the saved hash
+     * 3. If it matches, generate and return a JWT token
+     * 4. If it doesn't match, reject
+     */
+    public String login(String email, String password) {
+        // step 1: find the user by email
+        Optional<User> existing = userRepository.findByEmail(email);
+
+        if (existing.isEmpty()) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        User user = existing.get();
+
+        // step 2: check if the typed password matches the saved hash
+        boolean matches = passwordEncoder.matches(password, user.getPassword());
+
+        if (!matches) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        // step 3: generate and return a token
+        return jwtService.generateToken(user.getEmail());
     }
 
 
