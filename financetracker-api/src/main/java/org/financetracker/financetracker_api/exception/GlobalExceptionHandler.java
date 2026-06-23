@@ -142,4 +142,17 @@ public class GlobalExceptionHandler {
         // 500 = "server error — something broke on our end, not the user's fault"
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
+
+
+    /*
+     * Catches invalid login attempts (wrong email or password)
+     * Runs when: UserService.login() throws IllegalArgumentException
+     * Returns: 400 Bad Request with a clear message
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidLogin(IllegalArgumentException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
 }
