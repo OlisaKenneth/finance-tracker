@@ -1,4 +1,8 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.service;
+import org.financetracker.financetracker_api.model.Budget;
+import org.financetracker.financetracker_api.repository.BudgetRepository;
+import org.financetracker.financetracker_api.model.Transaction;
+import org.financetracker.financetracker_api.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;

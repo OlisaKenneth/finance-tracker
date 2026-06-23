@@ -1,6 +1,8 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.controller;
 
 import jakarta.validation.Valid;
+import org.financetracker.financetracker_api.model.SavingsGoal;
+import org.financetracker.financetracker_api.service.SavingsGoalService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;

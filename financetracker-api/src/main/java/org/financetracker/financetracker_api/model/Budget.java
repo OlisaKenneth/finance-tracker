@@ -1,4 +1,4 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.model;
 
 import jakarta.persistence.*;//<-Imports database labels. For example, @Entity turns a Java class into a database table, and @Id defines the primary key.
 import jakarta.validation.constraints.*;//<-Imports specific rules you can label your data with, such as @NotNull, @Size, or @Email

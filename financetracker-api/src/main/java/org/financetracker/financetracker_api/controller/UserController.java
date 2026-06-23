@@ -1,5 +1,7 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.controller;
 
+import org.financetracker.financetracker_api.model.User;
+import org.financetracker.financetracker_api.service.UserService;
 import org.springframework.web.bind.annotation.*; //<- gives us @RestController, @RequestMapping, @PostMapping, @RequestBody
 
 /*

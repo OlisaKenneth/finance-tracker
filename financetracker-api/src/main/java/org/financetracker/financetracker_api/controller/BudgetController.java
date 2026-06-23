@@ -1,6 +1,8 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.controller;
 
 import jakarta.validation.Valid;//<- Tells Spring to automatically trigger a validation check on an incoming object.
+import org.financetracker.financetracker_api.model.Budget;
+import org.financetracker.financetracker_api.service.BudgetService;
 import org.springframework.http.ResponseEntity;//<-A container that holds the data you want to send back to a user,
                                                         // along with web status codes (like 200 OK or 404 Not Found).
 import org.springframework.web.bind.annotation.*;//imports web controls. For example, @RestController makes your class

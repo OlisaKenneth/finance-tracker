@@ -1,4 +1,4 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.config;
 
 import org.springframework.context.annotation.Bean; //<- lets us create a reusable object Spring manages
 import org.springframework.context.annotation.Configuration; //<- marks this as a settings/config class

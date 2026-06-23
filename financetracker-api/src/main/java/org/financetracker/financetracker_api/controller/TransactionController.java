@@ -1,6 +1,8 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.controller;
 
 import jakarta.validation.Valid;
+import org.financetracker.financetracker_api.model.Transaction;
+import org.financetracker.financetracker_api.service.TransactionService;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import org.springframework.http.ResponseEntity;

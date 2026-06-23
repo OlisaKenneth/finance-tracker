@@ -1,4 +1,4 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.exception;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;

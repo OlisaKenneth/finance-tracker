@@ -1,4 +1,4 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 

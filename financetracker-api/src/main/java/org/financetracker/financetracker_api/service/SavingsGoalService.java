@@ -1,5 +1,7 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.service;
 
+import org.financetracker.financetracker_api.model.SavingsGoal;
+import org.financetracker.financetracker_api.repository.SavingsGoalRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;

@@ -1,5 +1,7 @@
-package org.financetracker.financetracker_api;
+package org.financetracker.financetracker_api.service;
 
+import org.financetracker.financetracker_api.model.Budget;
+import org.financetracker.financetracker_api.repository.BudgetRepository;
 import org.springframework.stereotype.Service;//Labels a class as a "Service," meaning it contains the main business
                                              // logic and calculations of your app.
 import java.util.List;
