@@ -1,10 +1,11 @@
 package org.financetracker.financetracker_api.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonIgnore; //<- stops the full User object from being sent back in every savings goal response
 
 // This class represents a Savings Goal
 // Think of it like a blueprint for what a savings goal looks like
-// Every savings goal has an id, goalName, targetAmount, savedSoFar and months
+// Every savings goal has an id, goalName, targetAmount, savedSoFar, months, and an owner (user)
 @Entity // tells Spring Boot "this class is a database table"
 @Table(name = "savings_goal") // the table in the database will be called "savings_goal"
 public class SavingsGoal {
@@ -39,6 +40,20 @@ public class SavingsGoal {
     @Positive(message = "Months must be greater than 0")
     private int months;
 
+    /*
+     * THE OWNERSHIP LINK — same pattern as Budget.java and Transaction.java.
+     *
+     * @ManyToOne: MANY savings goals can belong to ONE user.
+     * @JoinColumn: stores this as a "user_id" column in the
+     *              savings_goal table.
+     * @JsonIgnore: keeps the full User object (including the
+     *              hashed password) out of every API response.
+     */
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
+
     // SETTERS — these methods let you PUT values into the fields
 
     // sets the id of this savings goal
@@ -66,6 +81,11 @@ public class SavingsGoal {
         this.months = months;
     }
 
+    // sets which user owns this savings goal
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     // GETTERS — these methods let you GET values out of the fields
 
     // returns the id of this savings goal
@@ -91,5 +111,10 @@ public class SavingsGoal {
     // returns how many months you are giving yourself
     public int getMonths() {
         return months;
+    }
+
+    // returns which user owns this savings goal
+    public User getUser() {
+        return user;
     }
 }

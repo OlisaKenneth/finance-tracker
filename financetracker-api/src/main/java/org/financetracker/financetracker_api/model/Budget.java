@@ -2,10 +2,11 @@ package org.financetracker.financetracker_api.model;
 
 import jakarta.persistence.*;//<-Imports database labels. For example, @Entity turns a Java class into a database table, and @Id defines the primary key.
 import jakarta.validation.constraints.*;//<-Imports specific rules you can label your data with, such as @NotNull, @Size, or @Email
+import com.fasterxml.jackson.annotation.JsonIgnore; //<- stops the full User object from being sent back in every budget response
 
 // This class represents a Budget
 // Think of it like a blueprint for what a budget looks like
-// Every budget has an id, category, monthlyLimit and spent amount
+// Every budget has an id, category, monthlyLimit, spent amount, and an owner (user)
 @Entity // tells Spring Boot "this class is a database table"
 @Table(name = "budgets") // the table in the database will be called "budgets"
 public class Budget {
@@ -40,6 +41,27 @@ public class Budget {
     // - it gets updated internally when expenses are added
     private double spent;
 
+    /*
+     * THE OWNERSHIP LINK — this is the new part.
+     *
+     * @ManyToOne means: "MANY budgets can belong to ONE user"
+     * Picture it: User #3 can have many Budget rows, but each
+     * Budget row points back to exactly one User.
+     *
+     * @JoinColumn tells JPA: "store this relationship as a
+     * column called user_id in the budgets table" — that column
+     * holds the number that links back to the users table.
+     *
+     * @JsonIgnore stops this field from being included when we
+     * send a Budget back as JSON. Without it, every budget
+     * response would try to include the ENTIRE user object
+     * (including their hashed password) — we never want that.
+     */
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
+
     // SETTERS — these methods let you PUT values into the fields
     // like filling in a form
 
@@ -63,6 +85,11 @@ public class Budget {
         this.spent = spent;
     }
 
+    // sets which user owns this budget
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     // GETTERS — these methods let you GET values out of the fields
     // like reading what is written on the form
 
@@ -84,5 +111,10 @@ public class Budget {
     // returns how much has been spent so far
     public double getSpent() {
         return spent;
+    }
+
+    // returns which user owns this budget
+    public User getUser() {
+        return user;
     }
 }

@@ -1,10 +1,11 @@
 package org.financetracker.financetracker_api.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonIgnore; //<- stops the full User object from being sent back in every transaction response
 
 // This class represents a Transaction
 // Think of it like a blueprint for what a transaction looks like
-// Every transaction has an id, amount, category, description and date
+// Every transaction has an id, amount, category, description, date, and an owner (user)
 @Entity // tells Spring Boot "this class is a database table"
 @Table(name = "transactions") // the table in the database will be called "transactions"
 public class Transaction {
@@ -40,6 +41,20 @@ public class Transaction {
     // - it is always set automatically to today's date in TransactionService
     private String date;
 
+    /*
+     * THE OWNERSHIP LINK — same pattern as Budget.java.
+     *
+     * @ManyToOne: MANY transactions can belong to ONE user.
+     * @JoinColumn: stores this as a "user_id" column in the
+     *              transactions table.
+     * @JsonIgnore: keeps the full User object (including the
+     *              hashed password) out of every API response.
+     */
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
+
     // SETTERS — these methods let you PUT values into the fields
 
     // sets the id of this transaction
@@ -67,6 +82,11 @@ public class Transaction {
         this.date = date;
     }
 
+    // sets which user owns this transaction
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     // GETTERS — these methods let you GET values out of the fields
 
     // returns the id of this transaction
@@ -92,5 +112,10 @@ public class Transaction {
     // returns the date of the transaction e.g. "2026-05-19"
     public String getDate() {
         return date;
+    }
+
+    // returns which user owns this transaction
+    public User getUser() {
+        return user;
     }
 }
