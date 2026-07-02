@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.time.LocalDate;
 
 @Service
-public class QTransactionService {
+public class TransactionService {
     private TransactionRepository transactionRepository;
     private BudgetRepository budgetRepository;
 
