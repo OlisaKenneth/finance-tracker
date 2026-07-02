@@ -10,7 +10,7 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final String SECRET_KEY = "VGhpc0lzQVNlY3JldEtleVRoYXRTaG91bGRCZU11Y2hMb25nZXJBbmRTdG9yZWRTZWN1cmVseTEyMzQ1Ng==";
+    private final String SECRET_KEY = "TXlGaW5hbmNlVHJhY2tlclN1cGVyU2VjcmV0S2V5Rm9ySldUU2lnbmluZzIwMjZLZW5uZXRo";
 
     // Generates a JWT token for authenticated user
     public String generateToken(String email) {
