@@ -72,22 +72,13 @@ public class SavingsGoalService {
      * Adds money to an existing savings goal — but ONLY if a
      * goal with that name belongs to whoever is currently
      * logged in. Two different users could each name a goal
-     * "Car", so we can no longer search by name alone — we now
-     * search by name AND ownership together.
-     *
-     * NOTE: this uses the getAllGoals() list already scoped to
-     * this user, then filters by name in memory. This keeps the
-     * repository interface simple; if this list ever grows large
-     * per user, a dedicated findByGoalNameAndUserId query method
-     * would be the next optimization — worth revisiting later.
+     * "Car", so we search by name AND ownership together,
+     * scoped at the database level via findByGoalNameAndUserId.
      */
     public Optional<SavingsGoal> addSavings(String goalName, double value){
         Long userId = currentUserService.getCurrentUserId();
 
-        Optional<SavingsGoal> existing = savingsGoalRepository.findAllByUserId(userId)
-                .stream()
-                .filter(goal -> goal.getGoalName().equals(goalName))
-                .findFirst();
+        Optional<SavingsGoal> existing = savingsGoalRepository.findByGoalNameAndUserId(goalName, userId);
 
         if (existing.isPresent()) {
             SavingsGoal savingsGoal = existing.get();

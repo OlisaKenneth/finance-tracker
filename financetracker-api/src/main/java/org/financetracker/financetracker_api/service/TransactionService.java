@@ -55,11 +55,12 @@ public class TransactionService {
         transactionRepository.save(transaction);
 
         // find the matching budget for THIS user and update spent.
-        // findByCategory alone isn't safe here anymore — with many
-        // users, two different people could each have a "Groceries"
-        // budget, and we must only touch the current user's one.
-        Optional<Budget> budget = budgetRepository.findByCategory(category);
-        if (budget.isPresent() && budget.get().getUser().getId().equals(owner.getId())) {
+        // findByCategoryAndUserId is scoped at the database level,
+        // so it can only ever return a budget owned by this user —
+        // two different people can safely each have a "Groceries"
+        // budget without colliding.
+        Optional<Budget> budget = budgetRepository.findByCategoryAndUserId(category, owner.getId());
+        if (budget.isPresent()) {
             Budget b = budget.get();
             b.setSpent(b.getSpent() + amount); // ← add the amount to spent
             budgetRepository.save(b);           // ← save back to DB

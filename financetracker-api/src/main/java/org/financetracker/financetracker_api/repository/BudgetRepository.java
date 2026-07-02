@@ -23,18 +23,7 @@ import java.util.*;
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
     /*
-     * This is a custom method we added ourselves
-     * Spring Boot reads the method name "findByCategory"
-     * and automatically generates this SQL:
-     * SELECT * FROM budgets WHERE category = ?
-     *
-     * Optional<Budget> means the result might be empty
-     * (if no budget with that category exists)
-     */
-    Optional<Budget> findByCategory(String category);
-
-    /*
-     * THE PER-USER FILTER — this is the new part.
+     * THE PER-USER FILTER
      *
      * Spring Boot reads "findAllByUserId" and generates:
      * SELECT * FROM budgets WHERE user_id = ?
@@ -44,16 +33,21 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
      * database for rows that belong to the logged-in user.
      */
     List<Budget> findAllByUserId(Long userId);
+
+    /*
+     * THE SCOPED CATEGORY LOOKUP
+     *
+     * Replaces the old findByCategory(String category), which
+     * searched the ENTIRE table with no owner check — meaning
+     * two different users with a "Groceries" budget could
+     * accidentally collide.
+     *
+     * Spring Boot reads "findByCategoryAndUserId" and generates:
+     * SELECT * FROM budgets WHERE category = ? AND user_id = ?
+     *
+     * Now this lookup is naturally scoped to one specific user
+     * at the database level — no manual filtering needed
+     * afterward in the service layer.
+     */
+    Optional<Budget> findByCategoryAndUserId(String category, Long userId);
 }
-
-/* budgetRepository.findAll()        ← SELECT * FROM budgets
-budgetRepository.findById(1L)     ← SELECT * WHERE id = 1
-budgetRepository.save(budget)     ← INSERT or UPDATE
-budgetRepository.deleteById(1L)   ← DELETE WHERE id = 1
-
-public interface BudgetRepository extends JpaRepository<Budget, Long> {
-    Optional<Budget> findByCategory(String category);
-}
-
-SELECT * FROM budgets WHERE category = ?
-*/

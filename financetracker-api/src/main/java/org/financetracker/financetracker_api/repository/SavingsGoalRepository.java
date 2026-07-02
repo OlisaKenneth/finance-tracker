@@ -22,18 +22,7 @@ import java.util.*;
 public interface SavingsGoalRepository extends JpaRepository<SavingsGoal, Long>{
 
     /*
-     * This is a custom method we added ourselves
-     * Spring Boot reads the method name "findByGoalName"
-     * and automatically generates this SQL:
-     * SELECT * FROM savings_goal WHERE goal_name = ?
-     *
-     * Optional<SavingsGoal> means the result might be empty
-     * if no goal with that name exists
-     */
-    Optional<SavingsGoal> findByGoalName(String goalName);
-
-    /*
-     * THE PER-USER FILTER — same pattern as the other repositories.
+     * THE PER-USER FILTER
      *
      * Spring Boot reads "findAllByUserId" and generates:
      * SELECT * FROM savings_goal WHERE user_id = ?
@@ -42,4 +31,20 @@ public interface SavingsGoalRepository extends JpaRepository<SavingsGoal, Long>{
      * own savings goals, never anyone else's.
      */
     List<SavingsGoal> findAllByUserId(Long userId);
+
+    /*
+     * THE SCOPED GOAL NAME LOOKUP
+     *
+     * Replaces the old findByGoalName(String goalName), which
+     * searched the ENTIRE table with no owner check — meaning
+     * two different users could each name a goal "Car" and
+     * accidentally collide.
+     *
+     * Spring Boot reads "findByGoalNameAndUserId" and generates:
+     * SELECT * FROM savings_goal WHERE goal_name = ? AND user_id = ?
+     *
+     * Now this lookup is naturally scoped to one specific user
+     * at the database level.
+     */
+    Optional<SavingsGoal> findByGoalNameAndUserId(String goalName, Long userId);
 }
