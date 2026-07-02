@@ -31,4 +31,15 @@ public interface SavingsGoalRepository extends JpaRepository<SavingsGoal, Long>{
      * if no goal with that name exists
      */
     Optional<SavingsGoal> findByGoalName(String goalName);
+
+    /*
+     * THE PER-USER FILTER — same pattern as the other repositories.
+     *
+     * Spring Boot reads "findAllByUserId" and generates:
+     * SELECT * FROM savings_goal WHERE user_id = ?
+     *
+     * This ensures each logged-in user only ever sees their
+     * own savings goals, never anyone else's.
+     */
+    List<SavingsGoal> findAllByUserId(Long userId);
 }

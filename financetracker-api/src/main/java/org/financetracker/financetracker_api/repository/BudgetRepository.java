@@ -2,7 +2,7 @@ package org.financetracker.financetracker_api.repository;
 
 import org.financetracker.financetracker_api.model.Budget;
 import org.springframework.data.jpa.repository.JpaRepository;//A powerful tool that gives you instant database actions
-                                                    // (like save, delete, and find) without writing any database code.
+// (like save, delete, and find) without writing any database code.
 import java.util.*;
 
 /*
@@ -32,6 +32,18 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
      * (if no budget with that category exists)
      */
     Optional<Budget> findByCategory(String category);
+
+    /*
+     * THE PER-USER FILTER — this is the new part.
+     *
+     * Spring Boot reads "findAllByUserId" and generates:
+     * SELECT * FROM budgets WHERE user_id = ?
+     *
+     * This is how we make sure one person can never see
+     * another person's budgets — we only ever ask the
+     * database for rows that belong to the logged-in user.
+     */
+    List<Budget> findAllByUserId(Long userId);
 }
 
 /* budgetRepository.findAll()        ← SELECT * FROM budgets
