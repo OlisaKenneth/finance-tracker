@@ -14,10 +14,10 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
     private JwtService jwtService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder){
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService){
         this.userRepository = userRepository;
-        this.passwordEncoder=passwordEncoder;
-        this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService; 
     }
 
     public User register(String name, String email, String password, String role){
@@ -37,16 +37,36 @@ public class UserService {
         return userRepository.save(newUser);
     }
 
-    /*
-     * This method handles LOGIN
-     * Steps:
-     * 1. Find the user by email — if not found, reject
-     * 2. Check if the typed password matches the saved hash
-     * 3. If it matches, generate and return a JWT token
-     * 4. If it doesn't match, reject
-     */
+//    /*
+//     * This method handles LOGIN
+//     * Steps:
+//     * 1. Find the user by email — if not found, reject
+//     * 2. Check if the typed password matches the saved hash
+//     * 3. If it matches, generate and return a JWT token
+//     * 4. If it doesn't match, reject
+//     */
+//    public String login(String email, String password) {
+//        // step 1: find the user by email
+//        Optional<User> existing = userRepository.findByEmail(email);
+//
+//        if (existing.isEmpty()) {
+//            throw new IllegalArgumentException("Invalid email or password");
+//        }
+//
+//        User user = existing.get();
+//
+//        // step 2: check if the typed password matches the saved hash
+//        boolean matches = passwordEncoder.matches(password, user.getPassword());
+//
+//        if (!matches) {
+//            throw new IllegalArgumentException("Invalid email or password");
+//        }
+//
+//        // step 3: generate and return a token
+//        return jwtService.generateToken(user.getEmail());
+//    }
+
     public String login(String email, String password) {
-        // step 1: find the user by email
         Optional<User> existing = userRepository.findByEmail(email);
 
         if (existing.isEmpty()) {
@@ -55,15 +75,20 @@ public class UserService {
 
         User user = existing.get();
 
-        // step 2: check if the typed password matches the saved hash
         boolean matches = passwordEncoder.matches(password, user.getPassword());
 
         if (!matches) {
             throw new IllegalArgumentException("Invalid email or password");
         }
 
-        // step 3: generate and return a token
-        return jwtService.generateToken(user.getEmail());
+        // temporary: print the real error if token generation fails
+        try {
+            return jwtService.generateToken(user.getEmail());
+        } catch (Exception e) {
+            System.out.println("TOKEN GENERATION FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 
