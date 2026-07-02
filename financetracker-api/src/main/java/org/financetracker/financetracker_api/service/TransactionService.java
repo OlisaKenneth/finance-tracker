@@ -9,14 +9,14 @@ import java.util.Optional;
 import java.time.LocalDate;
 
 @Service
-public class TransactionService {
+public class QTransactionService {
     private TransactionRepository transactionRepository;
-    private BudgetRepository budgetRepository; // ← add this
+    private BudgetRepository budgetRepository;
 
     public TransactionService(TransactionRepository transactionRepository,
-                              BudgetRepository budgetRepository) { // ← add this
+                              BudgetRepository budgetRepository) {
         this.transactionRepository = transactionRepository;
-        this.budgetRepository = budgetRepository; // ← add this
+        this.budgetRepository = budgetRepository;
     }
 
     public List<Transaction> getAllTransaction(){
