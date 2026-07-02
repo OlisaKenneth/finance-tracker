@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain; //<- the actual list of security rules for incoming requests
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity // tells Spring Boot "use MY custom security rules, not the default locked-down behavior"
@@ -48,6 +49,7 @@ public class SecurityConfig {
                         // we use tokens (JWT) instead
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // preflight checks never carry a token — always let them through
                         .requestMatchers("/api/auth/**").permitAll() // anyone can register/login without being logged in
                         .anyRequest().authenticated() // everything else now REQUIRES a valid token
                 )
