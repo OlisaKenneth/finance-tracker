@@ -2,16 +2,27 @@ package org.financetracker.financetracker_api.config;
 
 import org.springframework.context.annotation.Bean; //<- lets us create a reusable object Spring manages
 import org.springframework.context.annotation.Configuration; //<- marks this as a settings/config class
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity; //<- lets us configure which URLs need login
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity; //<- turns on custom security rules
 import org.springframework.security.config.http.SessionCreationPolicy; //<- controls how Spring Security tracks logged in users
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain; //<- the actual list of security rules for incoming requests
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity // tells Spring Boot "use MY custom security rules, not the default locked-down behavior"
 public class SecurityConfig {
+
+    // JwtAuthFilter needs to run BEFORE Spring's normal login check,
+    // so we inject it here and place it into the filter chain below
+    private final JwtAuthFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -21,12 +32,11 @@ public class SecurityConfig {
     /*
      * This method defines WHICH URLs require login and WHICH don't
      *
-     * Right now:
+     * Now:
      * - /api/auth/** (register, login) → open to everyone, no login needed
-     * - everything else → still open for now (we'll lock it down later
-     *   once login actually works and the frontend can send tokens)
-     *
-     * We're doing this in stages so nothing breaks while we build
+     *   (you can't require a token to log in — that's the whole point
+     *   of login, to GET a token)
+     * - everything else → requires a valid JWT token
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,12 +45,16 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                         // STATELESS means: don't remember who's logged in using cookies/sessions
-                        // we'll use tokens (JWT) instead, added in a later step
+                        // we use tokens (JWT) instead
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // anyone can register/login without being logged in
-                        .anyRequest().permitAll() // TEMPORARY: everything else still open until JWT is wired in
-                );
+                        .anyRequest().authenticated() // everything else now REQUIRES a valid token
+                )
+                // JwtAuthFilter runs before Spring's built-in login-check filter,
+                // so by the time Spring checks "is this user authenticated?",
+                // our filter has already read the token and set the user if valid
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
