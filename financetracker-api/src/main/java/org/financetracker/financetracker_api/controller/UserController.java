@@ -1,5 +1,6 @@
 package org.financetracker.financetracker_api.controller;
 
+import org.financetracker.financetracker_api.dto.LoginResponse;
 import org.financetracker.financetracker_api.model.User;
 import org.financetracker.financetracker_api.service.UserService;
 import org.springframework.web.bind.annotation.*; //<- gives us @RestController, @RequestMapping, @PostMapping, @RequestBody
@@ -56,16 +57,17 @@ public class UserController {
     /*
      * This method handles POST requests to /api/auth/login
      * Receives email and password, checks if they're correct,
-     * and returns a JWT token if successful
+     * and returns a JWT token wrapped in a JSON object
      *
      * Example request body:
      * {"email": "kenneth@example.com", "password": "hello123"}
      *
      * Example response:
-     * "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrZW5uZXRoQGV4YW1wbGUuY29tIn0.4f8x..."
+     * { "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrZW5uZXRoQGV4YW1wbGUuY29tIn0.4f8x..." }
      */
     @PostMapping("/login")
-    public String login(@RequestBody User loginRequest) {
-        return userService.login(loginRequest.getEmail(), loginRequest.getPassword());
+    public LoginResponse login(@RequestBody User loginRequest) {
+        String token = userService.login(loginRequest.getEmail(), loginRequest.getPassword());
+        return new LoginResponse(token);
     }
 }
