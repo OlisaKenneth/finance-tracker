@@ -1,6 +1,7 @@
 package org.financetracker.financetracker_api.service;
 
 import org.financetracker.financetracker_api.model.SavingsGoal;
+import org.financetracker.financetracker_api.model.User;
 import org.financetracker.financetracker_api.repository.SavingsGoalRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -15,6 +16,10 @@ import java.util.Optional;
  * - The waiter (Controller) takes the request
  * - The manager (Service) checks if it makes sense
  * - The kitchen (Repository) actually does the database work
+ *
+ * NEW IN THIS VERSION: every method now also asks
+ * "which user does this belong to?" so one person can
+ * never see or touch another person's savings goals.
  */
 @Service // tells Spring Boot "manage this class for me and inject it where needed"
 public class SavingsGoalService {
@@ -23,32 +28,32 @@ public class SavingsGoalService {
     // we don't create it ourselves — Spring Boot hands it to us (dependency injection)
     private SavingsGoalRepository savingsGoalRepository;
 
+    // NEW: lets us ask "who is currently logged in?"
+    private CurrentUserService currentUserService;
+
     /*
-     * Constructor — Spring Boot sees that SavingsGoalService needs a SavingsGoalRepository
-     * so it automatically creates one and passes it in here
+     * Constructor — Spring Boot sees that SavingsGoalService needs
+     * a SavingsGoalRepository and a CurrentUserService, so it
+     * automatically creates both and passes them in here.
      * This is called DEPENDENCY INJECTION
      */
-    public SavingsGoalService(SavingsGoalRepository savingsGoalRepository) {
+    public SavingsGoalService(SavingsGoalRepository savingsGoalRepository, CurrentUserService currentUserService) {
         this.savingsGoalRepository = savingsGoalRepository;
+        this.currentUserService = currentUserService;
     }
 
     /*
-     * This method gets ALL savings goals from the database
-     * It returns a List because there can be many goals
-     * findAll() is a free method from JpaRepository
-     * it runs: SELECT * FROM savings_goal
+     * Returns only the savings goals belonging to whoever is
+     * currently logged in — not everyone's.
      */
     public List<SavingsGoal> getAllGoals(){
-        return savingsGoalRepository.findAll();
+        Long userId = currentUserService.getCurrentUserId();
+        return savingsGoalRepository.findAllByUserId(userId);
     }
 
     /*
-     * This method creates a NEW savings goal and saves it to the database
-     * Steps:
-     * 1. Create a new empty SavingsGoal object
-     * 2. Fill in the goalName, targetAmount and months from what the user sent
-     * 3. Set savedSoFar to 0 because a new goal has nothing saved yet
-     * 4. Save it to the database and return the saved goal (now with an id)
+     * Creates a new savings goal, automatically owned by the
+     * logged-in user.
      */
     public SavingsGoal createGoal(String goalName, double targetAmount, int months){
         SavingsGoal savingsGoal = new SavingsGoal(); // step 1: create empty goal
@@ -56,30 +61,41 @@ public class SavingsGoalService {
         savingsGoal.setTargetAmount(targetAmount); // step 2b: set the target amount
         savingsGoal.setMonths(months);             // step 2c: set how many months
         savingsGoal.setSavedSoFar(0);              // step 3: nothing saved yet
-        return savingsGoalRepository.save(savingsGoal); // step 4: save to DB and return
+
+        User owner = currentUserService.getCurrentUser(); // step 4: find who's logged in
+        savingsGoal.setUser(owner);                        // step 4: attach them as the owner
+
+        return savingsGoalRepository.save(savingsGoal); // step 5: save to DB and return
     }
 
     /*
-     * This method adds money to an existing savings goal
-     * Steps:
-     * 1. Find the goal by its name in the database
-     * 2. If it exists, add the value to what is already saved
-     * 3. Save the updated goal back to the database
-     * 4. Return the updated goal
+     * Adds money to an existing savings goal — but ONLY if a
+     * goal with that name belongs to whoever is currently
+     * logged in. Two different users could each name a goal
+     * "Car", so we can no longer search by name alone — we now
+     * search by name AND ownership together.
      *
-     * Returns Optional.empty() if the goal name does not exist
+     * NOTE: this uses the getAllGoals() list already scoped to
+     * this user, then filters by name in memory. This keeps the
+     * repository interface simple; if this list ever grows large
+     * per user, a dedicated findByGoalNameAndUserId query method
+     * would be the next optimization — worth revisiting later.
      */
     public Optional<SavingsGoal> addSavings(String goalName, double value){
-        // step 1: find the goal by name — might be empty if name does not exist
-        Optional<SavingsGoal> existing = savingsGoalRepository.findByGoalName(goalName);
+        Long userId = currentUserService.getCurrentUserId();
 
-        if(existing.isPresent()){ // step 2: only proceed if the goal exists
-            SavingsGoal savingsGoal = existing.get(); // get the actual object out of Optional
-            double currentValue = savingsGoal.getSavedSoFar() + value; // add new money to existing savings
-            savingsGoal.setSavedSoFar(currentValue); // update the savedSoFar field
-            savingsGoalRepository.save(savingsGoal); // step 3: save back to database
-            return Optional.of(savingsGoal); // step 4: return the updated goal
+        Optional<SavingsGoal> existing = savingsGoalRepository.findAllByUserId(userId)
+                .stream()
+                .filter(goal -> goal.getGoalName().equals(goalName))
+                .findFirst();
+
+        if (existing.isPresent()) {
+            SavingsGoal savingsGoal = existing.get();
+            double currentValue = savingsGoal.getSavedSoFar() + value;
+            savingsGoal.setSavedSoFar(currentValue);
+            savingsGoalRepository.save(savingsGoal);
+            return Optional.of(savingsGoal);
         }
-        return Optional.empty(); // goal not found — return empty
+        return Optional.empty();
     }
 }
