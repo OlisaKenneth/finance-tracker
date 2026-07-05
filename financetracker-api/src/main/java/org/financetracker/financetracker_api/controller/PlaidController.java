@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * This is what React calls FIRST, before the Plaid popup
  * can even open. Same pattern as every other controller
- * you build — so i receive the request and then ask a service to
+ * you've built — receive the request, ask a service to
  * do the real work, hand back the result.
  */
 @RestController
@@ -50,5 +50,25 @@ public class PlaidController {
         String linkToken = plaidService.createLinkToken(userId.toString());
 
         return Map.of("linkToken", linkToken);
+    }
+
+    /*
+     * Handles POST requests to /api/plaid/exchange-token
+     *
+     * Steps:
+     * 1. Figure out WHO is logged in
+     * 2. Take the public_token React just sent us
+     * 3. Ask PlaidService to trade it for a permanent key
+     *    and save it
+     *
+     * Example request body:
+     * { "publicToken": "public-sandbox-abc123..." }
+     */
+    @PostMapping("/exchange-token")
+    public void exchangeToken(@RequestBody Map<String, String> body) throws Exception {
+        String publicToken = body.get("publicToken");
+        var currentUser = currentUserService.getCurrentUser();
+
+        plaidService.exchangePublicToken(publicToken, currentUser);
     }
 }
