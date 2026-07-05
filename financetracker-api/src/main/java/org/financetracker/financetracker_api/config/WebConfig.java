@@ -14,6 +14,15 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://localhost:5173",
                         "https://finance-tracker-frontend-six-rho.vercel.app"
                 )
-                .allowedMethods("GET", "POST", "PUT", "DELETE");
+                // "*" means ANY method (GET, POST, PUT, DELETE,
+                // PATCH, etc.) is allowed — not just a hand-picked
+                // list. This stops us from ever hitting this same
+                // bug again if we add a new HTTP method later.
+                .allowedMethods("*")
+                // "*" here means ANY header is allowed through —
+                // this covers our Authorization header AND any
+                // future headers we might add (like ones Plaid's
+                // library might send).
+                .allowedHeaders("*");
     }
 }
