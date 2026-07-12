@@ -8,6 +8,9 @@ import com.plaid.client.model.Products;
 import com.plaid.client.model.CountryCode;
 import com.plaid.client.model.ItemPublicTokenExchangeRequest;
 import com.plaid.client.model.ItemPublicTokenExchangeResponse;
+import com.plaid.client.model.TransactionsSyncRequest;
+import com.plaid.client.model.TransactionsSyncResponse;
+import com.plaid.client.model.Transaction;
 import org.financetracker.financetracker_api.model.PlaidItem;
 import org.financetracker.financetracker_api.model.User;
 import org.financetracker.financetracker_api.repository.PlaidItemRepository;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -131,5 +135,57 @@ public class PlaidService {
         plaidItem.setItemId(itemId);
         plaidItem.setUser(currentUser);
         plaidItemRepository.save(plaidItem);
+    }
+
+    /*
+     * THE MAIL CARRIER — asks Plaid for transactions
+     *
+     * Uses the PERMANENT key (access_token) we saved earlier
+     * to ask Plaid: "give me this account's transactions."
+     *
+     * For now, we only handle the FIRST-TIME case — asking
+     * with an empty "bookmark" (cursor), which means
+     * "give me everything you've got so far."
+     *
+     * Returns Plaid's raw list of fake transactions — we'll
+     * convert these into OUR OWN Transaction objects in the
+     * next step, in a different method.
+     */
+    public List<Transaction> pullTransactions(String accessToken) throws IOException {
+
+        List<Transaction> allTransactions = new ArrayList<>();
+
+        // Start with an empty bookmark — this means
+        // "I've never asked before, give me everything"
+        String cursor = null;
+        boolean hasMore = true;
+
+        // Plaid sends results back in PAGES (like a book,
+        // not all in one giant scroll) — so we keep asking
+        // "is there more?" until it says no.
+        while (hasMore) {
+            TransactionsSyncRequest request = new TransactionsSyncRequest()
+                    .accessToken(accessToken)
+                    .cursor(cursor);
+
+            Response<TransactionsSyncResponse> response =
+                    plaidClient.transactionsSync(request).execute();
+
+            if (!response.isSuccessful()) {
+                throw new IOException("Plaid transactions sync failed: " + response.errorBody());
+            }
+
+            TransactionsSyncResponse body = response.body();
+
+            // "added" = brand new transactions we haven't seen
+            allTransactions.addAll(body.getAdded());
+
+            // update our bookmark and check if there's another
+            // page waiting
+            cursor = body.getNextCursor();
+            hasMore = body.getHasMore();
+        }
+
+        return allTransactions;
     }
 }
