@@ -204,67 +204,79 @@ public class PlaidService {
     public List<org.financetracker.financetracker_api.model.Transaction> syncTransactions(User currentUser) throws IOException {
 
         // Step 1: find this user's PlaidItem (their saved access token)
-        // findFirstByUserId returns an Optional — meaning it might not exist
-        // if the user hasn't connected a bank yet, throw a clear error
+        // if no bank is connected yet, throw a clear error
         PlaidItem plaidItem = plaidItemRepository
                 .findFirstByUserId(currentUser.getId())
                 .orElseThrow(() -> new IOException("No bank connected for this user"));
 
         // Step 2: get the raw Plaid transactions using the saved access token
-        // these come back as Plaid's own Transaction objects, not ours
         List<Transaction> plaidTransactions = pullTransactions(plaidItem.getAccessToken());
 
         // Step 3: convert each Plaid transaction into OUR Transaction model
-        // this list will hold the converted + saved versions
+        // only save it if it does not already exist in our database
         List<org.financetracker.financetracker_api.model.Transaction> saved = new ArrayList<>();
 
         // loop through every raw Plaid transaction one by one
         for (Transaction plaidTx : plaidTransactions) {
 
-            // create a blank OUR Transaction object to fill in
+            // pull out the values we need for the duplicate check
+            double amount = plaidTx.getAmount();
+
+            // get the date as a String — format "2026-06-26"
+            String date = plaidTx.getDate() != null
+                    ? plaidTx.getDate().toString()
+                    : "Unknown date";
+
+            // get the merchant name as description
+            String description = plaidTx.getMerchantName() != null
+                    ? plaidTx.getMerchantName()
+                    : "No description";
+
+            // DUPLICATE CHECK — ask the DB: does this transaction
+            // already exist for this user with the same amount,
+            // date, and description?
+            // if yes — skip it, do not insert again
+            // if no  — safe to save
+            boolean alreadyExists = transactionRepository
+                    .existsByUserIdAndAmountAndDateAndDescription(
+                            currentUser.getId(),
+                            amount,
+                            date,
+                            description
+                    );
+
+            // skip this transaction if we have already saved it before
+            if (alreadyExists) {
+                continue; // jump to the next transaction in the loop
+            }
+
+            // build our Transaction object with the converted values
             org.financetracker.financetracker_api.model.Transaction tx =
                     new org.financetracker.financetracker_api.model.Transaction();
 
-            // Plaid stores amount as a decimal — same type as ours
-            // note: Plaid amounts are POSITIVE for money leaving
-            // the account (spending), which matches our convention
-            tx.setAmount(plaidTx.getAmount());
+            tx.setAmount(amount);
 
-            // Plaid gives us a list of categories e.g. ["Food and Drink", "Restaurants"]
-            // we take the FIRST one as our single category string
-            // if there are no categories at all, we fall back to "Uncategorized"
+            // take the first category from Plaid's list, or "Uncategorized"
             if (plaidTx.getCategory() != null && !plaidTx.getCategory().isEmpty()) {
-                tx.setCategory(plaidTx.getCategory().get(0)); // first category in Plaid's list
+                tx.setCategory(plaidTx.getCategory().get(0));
             } else {
-                tx.setCategory("Uncategorized"); // safe fallback if Plaid sends nothing
+                tx.setCategory("Uncategorized");
             }
 
-            // Plaid gives us the merchant name as the description
-            // e.g. "Starbucks", "Walmart", "Netflix"
-            // if there is no merchant name, fall back to "No description"
-            String merchantName = plaidTx.getMerchantName();
-            tx.setDescription(merchantName != null ? merchantName : "No description");
-
-            // Plaid's date comes back as a LocalDate object
-            // we convert it to a String using toString() which gives "2026-07-14" format
-            // this matches the date format we already use in our own transactions
-            tx.setDate(plaidTx.getDate() != null ? plaidTx.getDate().toString() : "Unknown date");
+            tx.setDescription(description);
+            tx.setDate(date);
 
             // stamp this transaction with the logged-in user's id
-            // same ownership pattern used on every other entity
             tx.setUser(currentUser);
 
-            // save this one converted transaction to OUR database
-            // transactionRepository.save() returns the saved version with its generated id
+            // save to DB and add to results list
             org.financetracker.financetracker_api.model.Transaction savedTx =
                     transactionRepository.save(tx);
 
-            // add the saved transaction to our results list
             saved.add(savedTx);
         }
 
-        // return all the saved transactions so the controller
-        // can send them back to React
+        // return only the newly saved transactions
         return saved;
     }
 }
