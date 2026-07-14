@@ -14,5 +14,6 @@ public interface PlaidItemRepository extends JpaRepository<PlaidItem, Long> {
 
     // Handy for later: quickly check if a user has ANY bank
     // connected yet (returns the first one, if it exists).
-    Optional<PlaidItem> findFirstByUserId(Long userId);
+    Optional<PlaidItem> findFirstByUserIdOrderByIdDesc(Long userId);
+
 }

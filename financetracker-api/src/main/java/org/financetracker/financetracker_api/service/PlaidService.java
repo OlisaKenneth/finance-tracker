@@ -206,7 +206,7 @@ public class PlaidService {
         // Step 1: find this user's PlaidItem (their saved access token)
         // if no bank is connected yet, throw a clear error
         PlaidItem plaidItem = plaidItemRepository
-                .findFirstByUserId(currentUser.getId())
+                .findFirstByUserIdOrderByIdDesc(currentUser.getId())
                 .orElseThrow(() -> new IOException("No bank connected for this user"));
 
         // Step 2: get the raw Plaid transactions using the saved access token
