@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /*
  * PlaidService — THE WORKER
@@ -91,8 +92,37 @@ public class PlaidService {
      * Takes the TEMPORARY public_token and trades it with Plaid
      * for a PERMANENT access_token, then saves it to our DB
      * linked to the user who just connected their bank
+     *
+     * UPDATED: checks if user already has a synced bank connection
+     * before saving a new PlaidItem — prevents duplicate connections
      */
     public void exchangePublicToken(String publicToken, User currentUser) throws IOException {
+
+        /*
+         * NEW DUPLICATE CONNECTION CHECK
+         *
+         * Before doing anything, check if this user already has
+         * a bank connection that has been fully synced.
+         *
+         * If yes — stop here, do nothing.
+         * We don't want to save a second PlaidItem because that
+         * would let the user sync the same transactions again.
+         *
+         * In production with a real bank, users connect once and
+         * never need to connect again — this guard enforces that.
+         *
+         * In sandbox, every "Connect my bank" click creates a brand
+         * new Plaid item with new transaction IDs — this check
+         * prevents that from creating duplicate transactions.
+         */
+        Optional<PlaidItem> existingItem = plaidItemRepository
+                .findFirstByUserIdOrderByIdDesc(currentUser.getId());
+
+        if (existingItem.isPresent() && existingItem.get().isSynced()) {
+            // user already has a synced bank connection — skip entirely
+            // do not save a new PlaidItem, do not call Plaid
+            return;
+        }
 
         // build the request — just the claim ticket we want to trade in
         ItemPublicTokenExchangeRequest request =
@@ -186,7 +216,6 @@ public class PlaidService {
 
         // Step 2: if we already synced this connection, return empty list
         // this prevents duplicate transactions when the user connects again
-        // in sandbox every connection looks new — this flag solves that
         if (plaidItem.isSynced()) {
             return new ArrayList<>();
         }
@@ -209,7 +238,6 @@ public class PlaidService {
             }
 
             // Math.abs() converts Plaid's negative credits to positive
-            // so @Positive validation passes
             double amount = Math.abs(plaidTx.getAmount());
 
             // get the date as a String — format "2026-06-26"
