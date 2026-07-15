@@ -1,17 +1,17 @@
 package org.financetracker.financetracker_api.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import com.fasterxml.jackson.annotation.JsonIgnore; //<- stops the full User object from being sent back in every transaction response
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 // This class represents a Transaction
 // Think of it like a blueprint for what a transaction looks like
 // Every transaction has an id, amount, category, description, date, and an owner (user)
-@Entity // tells Spring Boot "this class is a database table"
-@Table(name = "transactions") // the table in the database will be called "transactions"
+@Entity
+@Table(name = "transactions")
 public class Transaction {
 
-    @Id // this field is the unique identifier for each transaction (like a receipt number)
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // database automatically assigns the next number (1, 2, 3...)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /*
@@ -40,6 +40,23 @@ public class Transaction {
     // - the user never sends the date directly
     // - it is always set automatically to today's date in TransactionService
     private String date;
+
+    /*
+     * NEW — THE PLAID TRANSACTION ID
+     *
+     * Every real Plaid transaction has a unique ID that never changes.
+     * We store it here so we can check "have we already saved this
+     * transaction before?" without comparing amount/date/description.
+     *
+     * This is the industry standard way to prevent duplicates.
+     * null for manually added transactions (user typed them in)
+     * set for Plaid-imported transactions
+     *
+     * @Column(unique = true) means no two rows can have the same
+     * plaidTransactionId — the database itself enforces this rule
+     */
+    @Column(unique = true)
+    private String plaidTransactionId;
 
     /*
      * THE OWNERSHIP LINK — same pattern as Budget.java.
@@ -87,6 +104,11 @@ public class Transaction {
         this.user = user;
     }
 
+    // sets the Plaid transaction ID — used to prevent duplicates
+    public void setPlaidTransactionId(String plaidTransactionId) {
+        this.plaidTransactionId = plaidTransactionId;
+    }
+
     // GETTERS — these methods let you GET values out of the fields
 
     // returns the id of this transaction
@@ -117,5 +139,10 @@ public class Transaction {
     // returns which user owns this transaction
     public User getUser() {
         return user;
+    }
+
+    // returns the Plaid transaction ID
+    public String getPlaidTransactionId() {
+        return plaidTransactionId;
     }
 }

@@ -219,8 +219,21 @@ public class PlaidService {
         // loop through every raw Plaid transaction one by one
         for (Transaction plaidTx : plaidTransactions) {
 
-            // Plaid uses negative numbers for credits (money coming in)
-            // Math.abs() converts any negative to positive so @Positive validation passes
+            // get Plaid's own unique ID for this transaction
+            // this never changes — it's Plaid's permanent receipt number
+            String plaidTransactionId = plaidTx.getTransactionId();
+
+            // DUPLICATE CHECK — ask the DB: have we already saved
+            // a transaction with this exact Plaid ID?
+            // if yes — skip it, do not insert again
+            // if no  — safe to save
+            if (plaidTransactionId != null &&
+                    transactionRepository.existsByPlaidTransactionId(plaidTransactionId)) {
+                continue; // skip — already saved this transaction before
+            }
+
+            // get the amount — Math.abs() converts Plaid's negative
+            // credits into positive values so @Positive validation passes
             double amount = Math.abs(plaidTx.getAmount());
 
             // get the date as a String — format "2026-06-26"
@@ -229,26 +242,17 @@ public class PlaidService {
                     : "Unknown date";
 
             // get the merchant name as description
+            // if Plaid gives no merchant name, fall back to "No description"
             String description = plaidTx.getMerchantName() != null
                     ? plaidTx.getMerchantName()
                     : "No description";
 
-            // DUPLICATE CHECK — ask the DB: does this transaction
-            // already exist for this user with the same amount,
-            // date, and description?
-            // if yes — skip it, do not insert again
-            // if no  — safe to save
-            boolean alreadyExists = transactionRepository
-                    .existsByUserIdAndAmountAndDateAndDescription(
-                            currentUser.getId(),
-                            amount,
-                            date,
-                            description
-                    );
-
-            // skip this transaction if we have already saved it before
-            if (alreadyExists) {
-                continue; // jump to the next transaction in the loop
+            // take the first category from Plaid's list, or "Uncategorized"
+            String category;
+            if (plaidTx.getCategory() != null && !plaidTx.getCategory().isEmpty()) {
+                category = plaidTx.getCategory().get(0);
+            } else {
+                category = "Uncategorized";
             }
 
             // build our Transaction object with the converted values
@@ -256,19 +260,13 @@ public class PlaidService {
                     new org.financetracker.financetracker_api.model.Transaction();
 
             tx.setAmount(amount);
-
-            // take the first category from Plaid's list, or "Uncategorized"
-            if (plaidTx.getCategory() != null && !plaidTx.getCategory().isEmpty()) {
-                tx.setCategory(plaidTx.getCategory().get(0));
-            } else {
-                tx.setCategory("Uncategorized");
-            }
-
+            tx.setCategory(category);
             tx.setDescription(description);
             tx.setDate(date);
-
-            // stamp this transaction with the logged-in user's id
             tx.setUser(currentUser);
+
+            // save Plaid's transaction ID so future syncs can skip this one
+            tx.setPlaidTransactionId(plaidTransactionId);
 
             // save to DB and add to results list
             org.financetracker.financetracker_api.model.Transaction savedTx =
