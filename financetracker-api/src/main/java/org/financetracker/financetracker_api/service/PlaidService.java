@@ -219,8 +219,9 @@ public class PlaidService {
         // loop through every raw Plaid transaction one by one
         for (Transaction plaidTx : plaidTransactions) {
 
-            // pull out the values we need for the duplicate check
-            double amount = plaidTx.getAmount();
+            // Plaid uses negative numbers for credits (money coming in)
+            // Math.abs() converts any negative to positive so @Positive validation passes
+            double amount = Math.abs(plaidTx.getAmount());
 
             // get the date as a String — format "2026-06-26"
             String date = plaidTx.getDate() != null
