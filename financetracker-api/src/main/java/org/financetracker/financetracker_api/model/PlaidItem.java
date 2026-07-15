@@ -12,11 +12,6 @@ import org.financetracker.financetracker_api.config.AccessTokenConverter;
  * Plaid, we get back a PERMANENT key (access_token). This
  * class's ONE job is to store that key safely in our
  * database, linked to the user who owns it.
- *
- * Same @ManyToOne pattern as Budget, Transaction, and
- * SavingsGoal — "MANY plaid items can belong to ONE user"
- * (in practice, usually just one per user for now, but the
- * pattern allows someone to connect multiple banks later).
  */
 @Entity
 @Table(name = "plaid_items")
@@ -26,21 +21,39 @@ public class PlaidItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // The PERMANENT key Plaid gave us — this is the
-    // powerful one that must NEVER be sent to the frontend.
-    // That's why we mark it @JsonIgnore below, same reason
-    // we hide the User object on Budget/Transaction.
+    // The PERMANENT key Plaid gave us — encrypted before saving
+    // @Convert tells JPA to run AccessTokenConverter automatically
+    // on every read and write — encryption is invisible to the rest of the code
     @Convert(converter = AccessTokenConverter.class)
     private String accessToken;
 
-    // Plaid also gives us an "itemId" — think of it as a
-    // receipt number for THIS specific bank connection.
-    // Useful later if we ever need to disconnect this bank.
+    // Plaid's receipt number for this specific bank connection
+    // useful later if we need to disconnect this bank
     private String itemId;
 
-    // Which bank this connection is for (e.g. "TD Bank") —
-    // just a friendly label to show the user later.
+    // which bank this connection is for e.g. "TD Bank"
     private String institutionName;
+
+    /*
+     * NEW — THE SYNC FLAG
+     *
+     * tracks whether we have already pulled transactions
+     * for this specific bank connection
+     *
+     * false = never synced yet, go ahead and pull transactions
+     * true  = already synced, skip — don't pull again
+     *
+     * This solves the sandbox duplicate problem:
+     * every time you click "Connect my bank" in sandbox,
+     * Plaid creates a brand new item with brand new transaction IDs
+     * so our ID-based duplicate check thinks they are all new.
+     *
+     * By marking each PlaidItem as synced after the first pull,
+     * we guarantee transactions are only pulled once per connection.
+     * In production with a real bank, this works correctly because
+     * users connect their bank once and never need to connect again.
+     */
+    private boolean synced = false;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -78,6 +91,16 @@ public class PlaidItem {
 
     public void setInstitutionName(String institutionName) {
         this.institutionName = institutionName;
+    }
+
+    // returns true if transactions have already been pulled for this connection
+    public boolean isSynced() {
+        return synced;
+    }
+
+    // sets the synced flag — called after successfully pulling transactions
+    public void setSynced(boolean synced) {
+        this.synced = synced;
     }
 
     public User getUser() {

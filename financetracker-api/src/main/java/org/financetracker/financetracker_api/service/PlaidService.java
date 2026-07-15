@@ -14,7 +14,7 @@ import com.plaid.client.model.Transaction;
 import org.financetracker.financetracker_api.model.PlaidItem;
 import org.financetracker.financetracker_api.model.User;
 import org.financetracker.financetracker_api.repository.PlaidItemRepository;
-import org.financetracker.financetracker_api.repository.TransactionRepository; // lets us save transactions to our own DB
+import org.financetracker.financetracker_api.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import retrofit2.Response;
 
@@ -30,19 +30,18 @@ import java.util.List;
  * 1. createLinkToken()      — prepares the popup ticket
  * 2. exchangePublicToken()  — trades the ticket for a permanent key
  * 3. pullTransactions()     — fetches raw Plaid transactions
- * 4. syncTransactions()     — NEW: converts + saves them to OUR DB
+ * 4. syncTransactions()     — converts + saves them to OUR DB
  */
 @Service
 public class PlaidService {
 
     // the finished PlaidApi connector built in PlaidConfig.java
-    // Spring hands it to us automatically
     private final PlaidApi plaidClient;
 
-    // lets us find PlaidItems (saved access tokens) from the DB
+    // lets us find and save PlaidItems (access tokens) from the DB
     private final PlaidItemRepository plaidItemRepository;
 
-    // NEW — lets us save converted transactions into OUR transactions table
+    // lets us save converted transactions into OUR transactions table
     private final TransactionRepository transactionRepository;
 
     // Spring automatically passes all three dependencies in here
@@ -51,15 +50,11 @@ public class PlaidService {
                         TransactionRepository transactionRepository) {
         this.plaidClient = plaidClient;
         this.plaidItemRepository = plaidItemRepository;
-        this.transactionRepository = transactionRepository; // store it so our methods can use it
+        this.transactionRepository = transactionRepository;
     }
 
     /*
-     * Asks Plaid: "please prepare a link_token for this user."
-     *
-     * userId — identifies WHICH of our own users this ticket
-     *          is being prepared for
-     *
+     * Asks Plaid to prepare a link_token for this user
      * Returns the link_token as a plain String
      */
     public String createLinkToken(String userId) throws IOException {
@@ -116,6 +111,7 @@ public class PlaidService {
         String itemId = response.body().getItemId();
 
         // save that permanent key safely in our DB, linked to the logged-in user
+        // synced = false by default — transactions not pulled yet
         PlaidItem plaidItem = new PlaidItem();
         plaidItem.setAccessToken(accessToken);
         plaidItem.setItemId(itemId);
@@ -124,17 +120,8 @@ public class PlaidService {
     }
 
     /*
-     * THE MAIL CARRIER — asks Plaid for raw transactions
-     *
-     * Uses the PERMANENT access_token to ask Plaid:
-     * "give me this account's transactions."
-     *
-     * Plaid sends results in PAGES — so we keep asking
-     * "is there more?" until it says no.
-     *
-     * Returns Plaid's raw list of transactions — these are
-     * Plaid's own Transaction objects, not ours yet.
-     * syncTransactions() below converts them into our format.
+     * Asks Plaid for raw transactions using the permanent access token
+     * Returns Plaid's raw list — syncTransactions() converts them
      */
     public List<Transaction> pullTransactions(String accessToken) throws IOException {
 
@@ -166,7 +153,6 @@ public class PlaidService {
             TransactionsSyncResponse body = response.body();
 
             // "added" = brand new transactions we haven't seen yet
-            // add this page's transactions to our growing list
             allTransactions.addAll(body.getAdded());
 
             // update our bookmark to the end of this page
@@ -176,64 +162,54 @@ public class PlaidService {
             hasMore = body.getHasMore();
         }
 
-        // return the full list of ALL raw Plaid transactions
         return allTransactions;
     }
 
     /*
-     * NEW — THE CONVERTER + SAVER
+     * THE CONVERTER + SAVER
      *
-     * This is the method that was missing.
-     *
-     * It does three things in order:
-     * 1. Finds this user's saved access token from the DB
-     * 2. Calls pullTransactions() to get the raw Plaid data
-     * 3. Converts each Plaid transaction into OUR Transaction
-     *    model and saves it to OUR transactions table
-     *
-     * Think of it like this:
-     * Plaid speaks "Plaid language" — their Transaction object
-     * has different field names and structure than ours.
-     * This method is the TRANSLATOR that converts their format
-     * into our format, then saves it.
-     *
-     * currentUser — the logged-in user, so we can:
-     *   a) find THEIR access token
-     *   b) stamp each saved transaction with THEIR user_id
+     * 1. Finds this user's most recent PlaidItem (access token)
+     * 2. Checks if we already synced this bank connection
+     *    — if yes, returns empty list immediately (no duplicates)
+     *    — if no, pulls transactions from Plaid
+     * 3. Converts each Plaid transaction into OUR Transaction model
+     * 4. Saves each one using Plaid's transaction ID as duplicate check
+     * 5. Marks the PlaidItem as synced so future calls are skipped
      */
     public List<org.financetracker.financetracker_api.model.Transaction> syncTransactions(User currentUser) throws IOException {
 
-        // Step 1: find this user's PlaidItem (their saved access token)
+        // Step 1: find this user's most recent PlaidItem
         // if no bank is connected yet, throw a clear error
         PlaidItem plaidItem = plaidItemRepository
                 .findFirstByUserIdOrderByIdDesc(currentUser.getId())
                 .orElseThrow(() -> new IOException("No bank connected for this user"));
 
-        // Step 2: get the raw Plaid transactions using the saved access token
+        // Step 2: if we already synced this connection, return empty list
+        // this prevents duplicate transactions when the user connects again
+        // in sandbox every connection looks new — this flag solves that
+        if (plaidItem.isSynced()) {
+            return new ArrayList<>();
+        }
+
+        // Step 3: get the raw Plaid transactions using the saved access token
         List<Transaction> plaidTransactions = pullTransactions(plaidItem.getAccessToken());
 
-        // Step 3: convert each Plaid transaction into OUR Transaction model
-        // only save it if it does not already exist in our database
+        // Step 4: convert each Plaid transaction into OUR Transaction model
         List<org.financetracker.financetracker_api.model.Transaction> saved = new ArrayList<>();
 
-        // loop through every raw Plaid transaction one by one
         for (Transaction plaidTx : plaidTransactions) {
 
             // get Plaid's own unique ID for this transaction
-            // this never changes — it's Plaid's permanent receipt number
             String plaidTransactionId = plaidTx.getTransactionId();
 
-            // DUPLICATE CHECK — ask the DB: have we already saved
-            // a transaction with this exact Plaid ID?
-            // if yes — skip it, do not insert again
-            // if no  — safe to save
+            // skip if we already saved this exact transaction before
             if (plaidTransactionId != null &&
                     transactionRepository.existsByPlaidTransactionId(plaidTransactionId)) {
-                continue; // skip — already saved this transaction before
+                continue;
             }
 
-            // get the amount — Math.abs() converts Plaid's negative
-            // credits into positive values so @Positive validation passes
+            // Math.abs() converts Plaid's negative credits to positive
+            // so @Positive validation passes
             double amount = Math.abs(plaidTx.getAmount());
 
             // get the date as a String — format "2026-06-26"
@@ -242,7 +218,6 @@ public class PlaidService {
                     : "Unknown date";
 
             // get the merchant name as description
-            // if Plaid gives no merchant name, fall back to "No description"
             String description = plaidTx.getMerchantName() != null
                     ? plaidTx.getMerchantName()
                     : "No description";
@@ -264,8 +239,6 @@ public class PlaidService {
             tx.setDescription(description);
             tx.setDate(date);
             tx.setUser(currentUser);
-
-            // save Plaid's transaction ID so future syncs can skip this one
             tx.setPlaidTransactionId(plaidTransactionId);
 
             // save to DB and add to results list
@@ -275,7 +248,11 @@ public class PlaidService {
             saved.add(savedTx);
         }
 
-        // return only the newly saved transactions
+        // Step 5: mark this PlaidItem as synced
+        // future calls to syncTransactions() will return empty list immediately
+        plaidItem.setSynced(true);
+        plaidItemRepository.save(plaidItem);
+
         return saved;
     }
 }
