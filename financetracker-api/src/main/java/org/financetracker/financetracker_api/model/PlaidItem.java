@@ -2,6 +2,8 @@ package org.financetracker.financetracker_api.model;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Convert;
+import org.financetracker.financetracker_api.config.AccessTokenConverter;
 
 /*
  * PlaidItem — THE SAFE, LABELED KEY HOLDER
@@ -28,6 +30,7 @@ public class PlaidItem {
     // powerful one that must NEVER be sent to the frontend.
     // That's why we mark it @JsonIgnore below, same reason
     // we hide the User object on Budget/Transaction.
+    @Convert(converter = AccessTokenConverter.class)
     private String accessToken;
 
     // Plaid also gives us an "itemId" — think of it as a
