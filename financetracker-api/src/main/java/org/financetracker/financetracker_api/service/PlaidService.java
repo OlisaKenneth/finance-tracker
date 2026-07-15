@@ -32,6 +32,7 @@ import java.util.Optional;
  * 2. exchangePublicToken()  — trades the ticket for a permanent key
  * 3. pullTransactions()     — fetches raw Plaid transactions
  * 4. syncTransactions()     — converts + saves them to OUR DB
+ *                             now with AI categorization via Claude
  */
 @Service
 public class PlaidService {
@@ -45,13 +46,18 @@ public class PlaidService {
     // lets us save converted transactions into OUR transactions table
     private final TransactionRepository transactionRepository;
 
-    // Spring automatically passes all three dependencies in here
+    // NEW — the AI service that categorizes transactions via Claude
+    private final AIService aiService;
+
+    // Spring automatically passes all four dependencies in here
     public PlaidService(PlaidApi plaidClient,
                         PlaidItemRepository plaidItemRepository,
-                        TransactionRepository transactionRepository) {
+                        TransactionRepository transactionRepository,
+                        AIService aiService) {
         this.plaidClient = plaidClient;
         this.plaidItemRepository = plaidItemRepository;
         this.transactionRepository = transactionRepository;
+        this.aiService = aiService;
     }
 
     /*
@@ -79,48 +85,29 @@ public class PlaidService {
         Response<LinkTokenCreateResponse> response =
                 plaidClient.linkTokenCreate(request).execute();
 
-        // if something went wrong, fail loudly with a clear message
         if (!response.isSuccessful()) {
             throw new IOException("Plaid link token creation failed: " + response.errorBody());
         }
 
-        // pull just the link_token string out and hand it back
         return response.body().getLinkToken();
     }
 
     /*
      * Takes the TEMPORARY public_token and trades it with Plaid
      * for a PERMANENT access_token, then saves it to our DB
-     * linked to the user who just connected their bank
      *
-     * UPDATED: checks if user already has a synced bank connection
-     * before saving a new PlaidItem — prevents duplicate connections
+     * GUARDS against duplicate connections:
+     * if user already has a synced PlaidItem, skip entirely
      */
     public void exchangePublicToken(String publicToken, User currentUser) throws IOException {
 
-        /*
-         * NEW DUPLICATE CONNECTION CHECK
-         *
-         * Before doing anything, check if this user already has
-         * a bank connection that has been fully synced.
-         *
-         * If yes — stop here, do nothing.
-         * We don't want to save a second PlaidItem because that
-         * would let the user sync the same transactions again.
-         *
-         * In production with a real bank, users connect once and
-         * never need to connect again — this guard enforces that.
-         *
-         * In sandbox, every "Connect my bank" click creates a brand
-         * new Plaid item with new transaction IDs — this check
-         * prevents that from creating duplicate transactions.
-         */
+        // check if this user already has a synced bank connection
+        // if yes, don't save a new PlaidItem — prevents duplicates
         Optional<PlaidItem> existingItem = plaidItemRepository
                 .findFirstByUserIdOrderByIdDesc(currentUser.getId());
 
         if (existingItem.isPresent() && existingItem.get().isSynced()) {
-            // user already has a synced bank connection — skip entirely
-            // do not save a new PlaidItem, do not call Plaid
+            // already have a synced connection — skip entirely
             return;
         }
 
@@ -151,27 +138,20 @@ public class PlaidService {
 
     /*
      * Asks Plaid for raw transactions using the permanent access token
-     * Returns Plaid's raw list — syncTransactions() converts them
+     * Plaid sends results in pages — we loop until hasMore = false
      */
     public List<Transaction> pullTransactions(String accessToken) throws IOException {
 
-        // this list will collect ALL transactions across all pages
         List<Transaction> allTransactions = new ArrayList<>();
-
-        // empty cursor means "I've never asked before, give me everything"
         String cursor = null;
-
-        // keeps looping until Plaid says there are no more pages
         boolean hasMore = true;
 
         while (hasMore) {
 
-            // build the request with our access token and current bookmark
             TransactionsSyncRequest request = new TransactionsSyncRequest()
                     .accessToken(accessToken)
                     .cursor(cursor);
 
-            // send the request to Plaid and wait for the response
             Response<TransactionsSyncResponse> response =
                     plaidClient.transactionsSync(request).execute();
 
@@ -179,16 +159,9 @@ public class PlaidService {
                 throw new IOException("Plaid transactions sync failed: " + response.errorBody());
             }
 
-            // unwrap the response body so we can read from it
             TransactionsSyncResponse body = response.body();
-
-            // "added" = brand new transactions we haven't seen yet
             allTransactions.addAll(body.getAdded());
-
-            // update our bookmark to the end of this page
             cursor = body.getNextCursor();
-
-            // check if there is another page waiting
             hasMore = body.getHasMore();
         }
 
@@ -196,31 +169,31 @@ public class PlaidService {
     }
 
     /*
-     * THE CONVERTER + SAVER
+     * THE CONVERTER + SAVER + AI CATEGORIZER
      *
      * 1. Finds this user's most recent PlaidItem (access token)
-     * 2. Checks if we already synced this bank connection
-     *    — if yes, returns empty list immediately (no duplicates)
-     *    — if no, pulls transactions from Plaid
-     * 3. Converts each Plaid transaction into OUR Transaction model
-     * 4. Saves each one using Plaid's transaction ID as duplicate check
-     * 5. Marks the PlaidItem as synced so future calls are skipped
+     * 2. Checks if already synced — if yes, returns empty list
+     * 3. Pulls raw transactions from Plaid
+     * 4. For each transaction:
+     *    a. Checks for duplicates using Plaid's transaction ID
+     *    b. Gets description from merchant name
+     *    c. NEW: asks Claude to categorize the description
+     *    d. Saves the transaction with the AI category
+     * 5. Marks the PlaidItem as synced
      */
     public List<org.financetracker.financetracker_api.model.Transaction> syncTransactions(User currentUser) throws IOException {
 
         // Step 1: find this user's most recent PlaidItem
-        // if no bank is connected yet, throw a clear error
         PlaidItem plaidItem = plaidItemRepository
                 .findFirstByUserIdOrderByIdDesc(currentUser.getId())
                 .orElseThrow(() -> new IOException("No bank connected for this user"));
 
-        // Step 2: if we already synced this connection, return empty list
-        // this prevents duplicate transactions when the user connects again
+        // Step 2: if already synced, return empty list immediately
         if (plaidItem.isSynced()) {
             return new ArrayList<>();
         }
 
-        // Step 3: get the raw Plaid transactions using the saved access token
+        // Step 3: get the raw Plaid transactions
         List<Transaction> plaidTransactions = pullTransactions(plaidItem.getAccessToken());
 
         // Step 4: convert each Plaid transaction into OUR Transaction model
@@ -246,15 +219,36 @@ public class PlaidService {
                     : "Unknown date";
 
             // get the merchant name as description
+            // fall back to "No description" if Plaid gives nothing
             String description = plaidTx.getMerchantName() != null
                     ? plaidTx.getMerchantName()
                     : "No description";
 
-            // take the first category from Plaid's list, or "Uncategorized"
+            /*
+             * NEW — AI CATEGORIZATION
+             *
+             * Instead of using Plaid's category list directly,
+             * we ask Claude to categorize based on the description.
+             *
+             * Why? Because Plaid's categories don't always match
+             * your budget categories. Claude maps them intelligently.
+             *
+             * Example:
+             * description = "TIM HORTONS #4521"
+             * Claude returns = "Food and Drink"
+             *
+             * If AI fails for any reason, falls back to Plaid's
+             * first category, or "Uncategorized" if none exists
+             */
             String category;
-            if (plaidTx.getCategory() != null && !plaidTx.getCategory().isEmpty()) {
+            if (!description.equals("No description")) {
+                // ask Claude to categorize this transaction
+                category = aiService.categorize(description);
+            } else if (plaidTx.getCategory() != null && !plaidTx.getCategory().isEmpty()) {
+                // no merchant name — fall back to Plaid's own category
                 category = plaidTx.getCategory().get(0);
             } else {
+                // no category from either source
                 category = "Uncategorized";
             }
 
@@ -277,7 +271,6 @@ public class PlaidService {
         }
 
         // Step 5: mark this PlaidItem as synced
-        // future calls to syncTransactions() will return empty list immediately
         plaidItem.setSynced(true);
         plaidItemRepository.save(plaidItem);
 
